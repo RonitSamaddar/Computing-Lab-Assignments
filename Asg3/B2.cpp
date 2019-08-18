@@ -1,4 +1,3 @@
-//TODO : FIX LINKED LIST INSERTION PROCESS AND DRY RUN WITH MAIN CODE
 
 #include<iostream>
 #include<cstdio>
@@ -131,6 +130,10 @@ public:
 	{
 		return(this->count==0);
 	}
+	int len()
+	{
+		return this->count;
+	}
 	void insert_sorted(Node *k)
 	{
 		if(k->get_a()==this->a)
@@ -173,6 +176,27 @@ public:
 			}
 		}
 	}
+
+	Node *del_first()
+	{
+		
+		if(this->isEmpty())
+		{
+			cout<<"The List Is Empty!!"<<endl;
+		}
+		else
+		{
+			
+			Node *curr=this->start->get_data();
+			Element *a=(this->start)->get_next();
+			free(this->start);
+			this->start=a;
+			this->count--;
+
+			return curr;
+
+		}
+	}
 	
 
 	void print_list()
@@ -199,14 +223,22 @@ public:
 
 
 
+
+
 class Tree
 {
 	Node *root;
+	int count;
 public:
 	Tree()
 	{
-		root=new Node();
-		root->set_data(1,1);
+		this->root=new Node();
+		(this->root)->set_data(1,1);
+		this->count=1;
+	}
+	int get_count()
+	{
+		return this->count;
 	}
 	Node *get_root()
 	{
@@ -215,7 +247,7 @@ public:
 
 	Node *tsearch(int a,int b)
 	{
-		cout<<"Searching "<<a<<","<<b<<endl;
+		//cout<<"Searching "<<a<<","<<b<<endl;
 		if(a==1 && b==1)
 			return this->root;
 		if(gcd(a,b)!=1 || a<1 || b<1)
@@ -225,24 +257,24 @@ public:
 			int dir=0,parent_a=0,parent_b=0;
 			if(b>a)
 			{
-				cout<<"Node is to right of its parent"<<endl;
+				//cout<<"Node is to right of its parent"<<endl;
 				dir=1;
 				parent_a=a;
 				parent_b=b-a;
 			}
 			else
 			{
-				cout<<"Node is to left of its parent"<<endl;
+				//cout<<"Node is to left of its parent"<<endl;
 				dir=0;
 				parent_a=a-b;
 				parent_b=b;
 			}
-			cout<<"Parent "<<parent_a<<","<<parent_b<<" needs to be searched"<<endl;
+			//cout<<"Parent "<<parent_a<<","<<parent_b<<" needs to be searched"<<endl;
 			Node *parent=tsearch(parent_a,parent_b);
-			cout<<"Parent "<<parent_a<<","<<parent_b<<" searched"<<endl;
+			//cout<<"Parent "<<parent_a<<","<<parent_b<<" searched"<<endl;
 			if(parent==NULL)
 			{
-				cout<<"Parent "<<parent_a<<","<<parent_b<<" does not exist so child "<<a<<","<<b<<" doesn't exists"<<endl;
+				//cout<<"Parent "<<parent_a<<","<<parent_b<<" does not exist so child "<<a<<","<<b<<" doesn't exists"<<endl;
 				return NULL;
 			}
 			else
@@ -260,17 +292,18 @@ public:
 
 	}
 
-	void tinsert(int a,int b)
+	int tinsert(int a,int b)
 	{
-		cout<<"Inserting "<<a<<","<<b<<endl;
+		//cout<<"Inserting "<<a<<","<<b<<endl;
 		if(gcd(a,b)==1)
 		{
-			cout<<"GCD = 1";
+			//cout<<"GCD = 1";
 			Node *n=tsearch(a,b);
-			cout<<"Finding if node is already there"<<endl;
+			//cout<<"Finding if node is already there"<<endl;
 			if(n==NULL)
 			{
-				cout<<"No such a,exists"<<endl;
+
+				//cout<<"No such a,exists"<<endl;
 				Node *x=new Node();
 				x->set_data(a,b);
 				int dir=0,parent_a=0,parent_b=0;
@@ -286,31 +319,34 @@ public:
 					parent_a=a-b;
 					parent_b=b;
 				}
-				cout<<"Finding Parent with values "<<parent_a<<","<<parent_b<<endl;
+				//cout<<"Finding Parent with values "<<parent_a<<","<<parent_b<<endl;
 				Node *parent=this->tsearch(parent_a,parent_b);
+				int pcount=0;
 				if(parent==NULL)
 				{
-					cout<<"Parent needs to be inserted "<<endl;
-					tinsert(parent_a,parent_b);
-					cout<<"Parent inserted "<<endl;
+					//cout<<"Parent needs to be inserted "<<endl;
+					pcount=tinsert(parent_a,parent_b);
+					//cout<<"Parent inserted "<<endl;
 					parent=this->tsearch(parent_a,parent_b);
 				}
 				if(dir==1)
 				{
 					parent->set_right(x);
-					cout<<"New node "<<a<<","<<b<<" set to right of parent"<<endl;
+					//cout<<"New node "<<a<<","<<b<<" set to right of parent"<<endl;
 				}
 				else
 				{
 					parent->set_left(x);
-					cout<<"New node "<<a<<","<<b<<" set to left of parent"<<endl;
+					//cout<<"New node "<<a<<","<<b<<" set to left of parent"<<endl;
 				}
+				this->count++;
+				return 1+pcount;
 
 			}
 		}
 	}
 	
-	void tdelete(int a,int b)
+	int tdelete(int a,int b)
 	{
 		
 		Node *n=tsearch(a,b);
@@ -331,19 +367,20 @@ public:
 			}
 			Node *parent=tsearch(parent_a,parent_b);
 			int a2,b2;
+			int l=0,r=0;
 			if(n->get_left())
 			{
 				Node *nd=n->get_left();
 				a2=nd->get_a();
 				b2=nd->get_b();
-				tdelete(a2,b2);
+				l=tdelete(a2,b2);
 			}
 			if(n->get_right())
 			{
 				Node *nd=n->get_right();
 				a2=nd->get_a();
 				b2=nd->get_b();
-				tdelete(a2,b2);
+				r=tdelete(a2,b2);
 			}
 			if(dir==0)
 			{
@@ -356,6 +393,8 @@ public:
 				free(parent->get_right());
 				parent->set_right(NULL);
 			}
+			this->count--;
+			return 1+l+r;
 		}
 		
 	}
@@ -403,8 +442,74 @@ void printInorder(Node *curr)
 	if(curr->get_right())
 		printInorder(curr->get_right());
 }
+
+int max(int x,int y)
+{
+	if(x>=y)
+		return x;
+	else 
+		return y;
+}
+
+int find_MaxA(Node *curr)
+{
+	if(curr==NULL)
+		return 0;
+	else if(curr->get_left()==NULL && curr->get_right()==NULL)
+		return curr->get_a();
+	else
+	{
+		int M1=curr->get_a();
+		if(curr->get_left())
+			M1=max(M1,find_MaxA(curr->get_left()));
+		if(curr->get_right())
+			M1=max(M1,find_MaxA(curr->get_right()));
+		return M1;
+	}
+}
+void print_arr_list(LinkedList **L,int A)
+{
+	for(int i=1;i<=A;i++)
+	{
+		cout<<"List"<<i<<" ,Count = "<<L[i]->len()<<endl;
+	}
+}
+void lex_rec(LinkedList **L,int index,int A)
+{
+	int length=L[index]->len();
+	int p=0;
+	while(L[index]->isEmpty()!=1)
+	{
+		//cout<<++p<<"-th iteration"<<endl;
+		Node *curr=L[index]->del_first();
+		int a=curr->get_a();
+		int b=curr->get_b();
+		cout<<"("<<a<<","<<b<<") ";
+		Node *left=curr->get_left();
+		Node *right=curr->get_right();
+		if(left)
+			L[a+b]->insert_sorted(left);
+		if(right)
+			L[index]->insert_sorted(right);
+	}
+	free(L[index]);
+}
 void printLexorder(Node *curr)
 {
+	int A=find_MaxA(curr);
+	LinkedList *L[A+1];
+	for(int i=1;i<=A;i++)
+	{
+		L[i]=new LinkedList(i);
+	}
+	L[1]->insert_sorted(curr);
+	//print_arr_list(L,A);
+	for(int i=1;i<=A;i++)
+	{
+		lex_rec(L,i,A);
+
+	}
+	cout<<endl;
 
 }
 
@@ -414,50 +519,75 @@ void printLexorder(Node *curr)
 int main()
 {
 	Tree *T=new Tree();
-	
-	int a1=1,b1=1;
-	while(a1!=0 || b1!=0)
-	{
-		cout<<"Enter values to insert or 0,0 to stop : ";
-		cin>>a1>>b1;
-		if(a1==0 && b1==0)
-			break;
-		T->tinsert(a1,b1);
-		printTree(0,0,T->get_root());
+	int nins,ndel;
+	cout<<"nins = ";
+	cin>>nins;
+	cout<<"ndel = ";
+	cin>>nins;
 
-	}
-	a1=1;
-	b1=1;
-	while(a1!=0 || b1!=0)
+
+	int a,b;
+	cout<<"\n//For insertion,search or deletion enter a and b with a space in between\n"<<endl;
+	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+	cout<<"+++ INSERTION PHASE"<<endl;
+	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+
+	for(int i=0;i<nins;i++)
 	{
-		cout<<"Enter values to delete or 0,0 to stop : ";
-		cin>>a1>>b1;
-		if(a1==0 && b1==0)
-			break;
-		T->tdelete(a1,b1);
-		printTree(0,0,T->get_root());
+		
+		cin>>a>>b;
+		int count=T->tinsert(a,b);
+		printf("(%2d,%2d) : %2d nodes added\n",a,b,count);
+		
 	}
+
+	cout<<"\n+++ Number of nodes = "<<T->get_count()<<endl;
+	cout<<"\n+++ Preorder"<<endl;
 	printPreorder(T->get_root());
-	cout<<endl;
+	cout<<"\n\n+++ Inorder"<<endl;
 	printInorder(T->get_root());
-	cout<<endl;
+	cout<<"\n\n+++ Lexical Order"<<endl;
+	printLexorder(T->get_root());
 
+	cout<<"\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+	cout<<"+++ SEARCH PHASE"<<endl;
+	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+	cin>>a>>b;
+	cout<<"("<<a<<","<<b<<") : ";
+	Node *n=T->tsearch(a,b);
+	if(n==NULL)
+		cout<<"Search failed"<<endl;
+	else
+		cout<<"Search successful"<<endl;
+	cin>>a>>b;
+	printf("(%2d,%2d) : ",a,b);
+	n=T->tsearch(a,b);
+	if(n==NULL)
+		cout<<"Search failed"<<endl;
+	else
+		cout<<"Search successful"<<endl;
 
-	a1=1;
-	b1=1;
-	LinkedList *L=new LinkedList(4);
-	while(a1!=0 || b1!=0)
+	cout<<"\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+	cout<<"+++ DELETION PHASE"<<endl;
+	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+
+	for(int i=0;i<nins;i++)
 	{
-		cout<<"Enter values to insert to linkedlist or 0,0 to stop : ";
-		cin>>a1>>b1;
-		if(a1==0 && b1==0)
-			break;
-		Node *k=new Node();
-		k->set_data(a1,b1);
-		L->insert_sorted(k);
-
+		int a,b;
+		cin>>a>>b;
+		int count=T->tdelete(a,b);
+		printf("(%2d,%2d) : %2d nodes deleted\n",a,b,count);
 	}
-	L->print_list();
+
+	cout<<"\n+++ Number of nodes = "<<T->get_count()<<endl;
+	cout<<"\n+++ Preorder"<<endl;
+	printPreorder(T->get_root());
+	cout<<"\n\n+++ Inorder"<<endl;
+	printInorder(T->get_root());
+	cout<<"\n\n+++ Lexical Order"<<endl;
+	printLexorder(T->get_root());
+
+
 
 
 
