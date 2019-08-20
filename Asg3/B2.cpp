@@ -8,13 +8,13 @@ using namespace std;
 
 int gcd(int a,int b)
 {
-	
+	//Function to calculate gcd of two numbers assuming a<b
 	if(a>b)
-	{
+	{	//So if a>b, we swap the two
 		return gcd(b,a);
 	}
 	else
-	{
+	{	//recursive approach of the repeated division process for gcd calculation process
 		if(b%a==0)
 		{
 			return a;
@@ -29,18 +29,21 @@ int gcd(int a,int b)
 
 class Node
 {
+	//class for representing one Node of the Tree
+
 	int a;
 	int b;
 	Node *left;
 	Node *right;
 public:
 	Node()
-	{
+	{	//Constructor to initialize data items to default values
 		this->a=-1;
 		this->b=-1;
 		this->left=NULL;
 		this->right=NULL;
 	}
+	//Various functions for setting values, getting values and printing Node data
 	void set_data(int a,int b)
 	{
 		this->a=a;
@@ -82,15 +85,16 @@ public:
 
 class Element
 {
-private:
-	Node *data;
+	//class for representing one node of the linkedlist 
+	Node *data;//Here data of each element of linkedlist is one node of the Tree
 	Element *next;
 public:
 	Element(Node *k)
-	{
+	{	//Initializing the element with its corresponding Node
 		this->data=k;
 		this->next=NULL;
 	}
+	//Functions for getting and setting the data items
 	Node *get_data()
 	{
 		return this->data;
@@ -112,48 +116,51 @@ public:
 
 class LinkedList
 {
-private:
+	//class for representing a Linkedlist H[a] characterized by 
+	//start element, count of elements in list, and the a value for which list
+	//is defined
+
 	Element *start;
 	int count;
 	int a;
 public:
 	LinkedList(int a)
-	{
+	{	//Initializing the data items to default values. Setting value of a for the list.
 		this->start=NULL;
 		this->count=0;
 		this->a=a;
 	}
 	int isEmpty()
-	{
+	{	//Checking if list is Empty
 		return(this->count==0);
 	}
 	int len()
-	{
+	{	//Getting length of list, that is count of elements
 		return this->count;
 	}
 	void insert_sorted(Node *k)
 	{
+		//We insert each Node in its right place in a list sorted on the node's b values
 		if(k->get_a()==this->a)
-		{
+		{	//we check that a value on input Node matches with a value of the list
 			this->count++;
 			if(this->start==NULL)
 			{
+				//if list is empty, we directly set the input node as the start node	
 				this->start=new Element(k);
 			}
 			else
 			{
+				//Else we run a loop to the point, where input b is more than current element's b
+				//but less than b value of its successor element. We then insert b value in between the
+				//two mentioned nodes
+
 				Element *curr=this->start;
-				//cout<<"BREAKPOINT 1"<<endl;
 				Node *curr_node=curr->get_data();
-				//cout<<"BREAKPOINT 2"<<endl;
 				int k_b=k->get_b();
-				//cout<<"BREAKPOINT 3"<<endl;
 				int curr_b=curr_node->get_b();
-				//cout<<"BREAKPOINT 4"<<endl;
-				
-				//cout<<"BREAKPOINT 5"<<endl;
 				Element *e=new Element(k);
-				//cout<<"BREAKPOINT 6"<<endl;
+				
 				if(k_b<curr_b)
 				{
 					e->set_next(this->start);
@@ -176,7 +183,8 @@ public:
 
 	Node *del_first()
 	{
-		
+		//We will always delete the first element of the list and
+		//get the corresponding node.
 		if(this->isEmpty())
 		{
 			cout<<"The List Is Empty!!"<<endl;
@@ -198,6 +206,7 @@ public:
 
 	void print_list()
 	{
+		//print list function for debugging purposes
 		if(this->isEmpty())
 		{
 			cout<<"The List Is Empty!!"<<endl;
@@ -224,58 +233,68 @@ public:
 
 class Tree
 {
+	//class for representing a Tree characterized by its root node and count of nodes 
 	Node *root;
 	int count;
 public:
 	Tree()
 	{
+		//initializing the Tree by assigning a root node of (1,1)
 		this->root=new Node();
 		(this->root)->set_data(1,1);
 		this->count=1;
 	}
 	int get_count()
 	{
+		//function for getting number of nodes in tree
 		return this->count;
 	}
 	Node *get_root()
 	{
+		//function for getting the root node of the tree
 		return this->root;
 	}
 
 	Node *tsearch(int a,int b)
 	{
-		//cout<<"Searching "<<a<<","<<b<<endl;
+		//function for searching a (a,b) node in the tree
+
 		if(a==1 && b==1)
-			return this->root;
+			return this->root;// Since (1,1) = root node
 		if(gcd(a,b)!=1 || a<1 || b<1)
-			return NULL;
+			return NULL;	//since tree can only have nodes (a,b) whose gcd =1 and with a,b >=1
 		else
 		{
+			//Here first we find possible parent node of our node (if present in tree)
+			//and also if our node is the left or right child
 			int dir=0,parent_a=0,parent_b=0;
 			if(b>a)
 			{
-				//cout<<"Node is to right of its parent"<<endl;
+				//RIGHT CHILD
 				dir=1;
 				parent_a=a;
 				parent_b=b-a;
 			}
 			else
 			{
-				//cout<<"Node is to left of its parent"<<endl;
+				//LEFT CHILD
 				dir=0;
 				parent_a=a-b;
 				parent_b=b;
 			}
-			//cout<<"Parent "<<parent_a<<","<<parent_b<<" needs to be searched"<<endl;
+
+			//Then we search for the parent node recursively
 			Node *parent=tsearch(parent_a,parent_b);
-			//cout<<"Parent "<<parent_a<<","<<parent_b<<" searched"<<endl;
+			
 			if(parent==NULL)
 			{
-				//cout<<"Parent "<<parent_a<<","<<parent_b<<" does not exist so child "<<a<<","<<b<<" doesn't exists"<<endl;
+				//Parent not present in tree. So no such node is possible.
 				return NULL;
 			}
 			else
 			{
+				//if parent is present, we return corresponding child node, where our actual
+				//node must have been, as determined earlier
 				if(dir==0)
 				{
 					return parent->get_left();
@@ -291,43 +310,53 @@ public:
 
 	int tinsert(int a,int b)
 	{
-		//cout<<"Inserting "<<a<<","<<b<<endl;
+		//function for inserting node(a,b) in tree
+		
 		if(gcd(a,b)==1)
 		{
-			//cout<<"GCD = 1";
+			//we can only insert (a,b) whose gcd = 1
+			
 			Node *n=tsearch(a,b);
-			//cout<<"Finding if node is already there"<<endl;
+			//First we search if such a node is already present
 			if(n==NULL)
 			{
+				//Only if it is not present, than we insert the node
 
-				//cout<<"No such a,exists"<<endl;
 				Node *x=new Node();
 				x->set_data(a,b);
 				int dir=0,parent_a=0,parent_b=0;
+				//Like search, we first determine its possible parent node (parent_a,parent_b)
+				//and also whether our given node is left or right child
+
 				if(b>a)
 				{
+					//RIGHT CHILD
 					dir=1;
 					parent_a=a;
 					parent_b=b-a;
 				}
 				else
 				{
+					//LEFT CHILD
 					dir=0;
 					parent_a=a-b;
 					parent_b=b;
 				}
-				//cout<<"Finding Parent with values "<<parent_a<<","<<parent_b<<endl;
+				
+				//Then we search for the parent node in question
 				Node *parent=this->tsearch(parent_a,parent_b);
 				int pcount=0;
 				if(parent==NULL)
 				{
-					//cout<<"Parent needs to be inserted "<<endl;
+					//If parent node already not in tree, we need to insert it too
 					pcount=tinsert(parent_a,parent_b);
-					//cout<<"Parent inserted "<<endl;
 					parent=this->tsearch(parent_a,parent_b);
 				}
+				//Then we set assign the parent's left or right child to the given node,
+				//as determined earlier
 				if(dir==1)
 				{
+
 					parent->set_right(x);
 					//cout<<"New node "<<a<<","<<b<<" set to right of parent"<<endl;
 				}
@@ -337,20 +366,25 @@ public:
 					//cout<<"New node "<<a<<","<<b<<" set to left of parent"<<endl;
 				}
 				this->count++;
+				//Number of nodes inserted = 1 + number of nodes inserted for inserting parent
 				return 1+pcount;
+
 
 			}
 		}
-		return 0;
+		return 0;//if no insertion takes place
 	}
 	
 	int tdelete(int a,int b)
 	{
-		
+		//Function for deleting a node
 		Node *n=tsearch(a,b);
 		if(n!=NULL)
 		{
+			//We can only delete a node, if it is actually there in the tree
 			int dir=0,parent_a=0,parent_b=0;
+			//Like search, we first determine its possible parent node (parent_a,parent_b)
+			//and also whether our given node is left or right child
 			if(b>a)
 			{
 				dir=1;
@@ -363,9 +397,13 @@ public:
 				parent_a=a-b;
 				parent_b=b;
 			}
+
+			//Then we search for the parent node in question
 			Node *parent=tsearch(parent_a,parent_b);
 			int a2,b2;
 			int l=0,r=0;
+
+			//Before deleting the node, we have to delete its children nodes
 			if(n->get_left())
 			{
 				Node *nd=n->get_left();
@@ -380,6 +418,9 @@ public:
 				b2=nd->get_b();
 				r=tdelete(a2,b2);
 			}
+
+			//Then we delete the node by freeing its memory and setting left or right
+			//child of node of parent to NULL, as determined above
 			if(dir==0)
 			{
 				free(parent->get_left());
@@ -392,10 +433,11 @@ public:
 				parent->set_right(NULL);
 			}
 			this->count--;
+			//Number of deletions = 1 + deletions for left node + deletions for right node
 			return 1+l+r;
 		}
 
-		return 0;
+		return 0;//if no deletions takes place
 		
 	}
 	
@@ -405,6 +447,7 @@ public:
 
 void printTree(int level,int dir,Node *root)
 {
+	//Tree printing function for debugging 
 
 	Node *curr=root;
 	for(int i=0;i<level;i++)
@@ -428,6 +471,7 @@ void printTree(int level,int dir,Node *root)
 
 void printPreorder(Node *curr)
 {
+	//Function for printing Preorder
 	curr->printNode();
 	if(curr->get_left())
 		printPreorder(curr->get_left());
@@ -436,6 +480,7 @@ void printPreorder(Node *curr)
 }
 void printInorder(Node *curr)
 {
+	//Function for printing Inorder
 	if(curr->get_left())
 		printInorder(curr->get_left());
 	curr->printNode();
@@ -445,6 +490,7 @@ void printInorder(Node *curr)
 
 int max(int x,int y)
 {
+	//Function for calculating which is greater, x or y
 	if(x>=y)
 		return x;
 	else 
@@ -453,12 +499,14 @@ int max(int x,int y)
 
 int find_MaxA(Node *curr)
 {
+	//Function for finding maximum value of a in tree
 	if(curr==NULL)
 		return 0;
 	else if(curr->get_left()==NULL && curr->get_right()==NULL)
 		return curr->get_a();
 	else
 	{
+		//Maximum value = max( a of current node, max_a of left subtree, max_a of right subtree)
 		int M1=curr->get_a();
 		if(curr->get_left())
 			M1=max(M1,find_MaxA(curr->get_left()));
@@ -469,6 +517,7 @@ int find_MaxA(Node *curr)
 }
 void print_arr_list(LinkedList **L,int A)
 {
+	//Debuggging function for printing number of elements in all the lists
 	for(int i=1;i<=A;i++)
 	{
 		cout<<"List"<<i<<" ,Count = "<<L[i]->len()<<endl;
@@ -476,6 +525,7 @@ void print_arr_list(LinkedList **L,int A)
 }
 void lex_rec(LinkedList **L,int index,int A)
 {
+	//Recursion function that prints the portion of lexOrder for each a
 	int length=L[index]->len();
 	int p=0;
 	while(L[index]->isEmpty()!=1)
@@ -496,7 +546,10 @@ void lex_rec(LinkedList **L,int index,int A)
 }
 void printLexorder(Node *curr)
 {
+	//Function for printing Lexorder
+
 	int A=find_MaxA(curr);
+	//We define an array of linked lists, one for each a=1,2,..,A
 	LinkedList *L[A+1];
 	for(int i=1;i<=A;i++)
 	{
@@ -505,7 +558,7 @@ void printLexorder(Node *curr)
 	L[1]->insert_sorted(curr);
 	//print_arr_list(L,A);
 	for(int i=1;i<=A;i++)
-	{
+	{// Call recursive function for each a
 		lex_rec(L,i,A);
 
 	}
