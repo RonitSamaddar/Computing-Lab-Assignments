@@ -4,14 +4,11 @@
 #include<cstdlib>
 using namespace std;
 
-int gcd(int,int);
-class Element;
-class LinkedList;
-class Node;
-class Tree;
+
 
 int gcd(int a,int b)
 {
+	
 	if(a>b)
 	{
 		return gcd(b,a);
@@ -78,7 +75,7 @@ public:
 
 	void printNode()
 	{
-		cout<<"("<<a<<","<<b<<")"<<endl;
+		printf("(%2d,%2d) ",this->a,this->b);
 	}
 
 };
@@ -212,11 +209,11 @@ public:
 			while(a->get_next()!=NULL)
 			{
 				curr=a->get_data();
-				cout<<"("<<curr->get_a()<<","<<curr->get_b()<<")-->";
+				printf("(%2d,%2d)-->",curr->get_a(),curr->get_b());
 				a=a->get_next();
 			}
 			curr=a->get_data();
-			cout<<"("<<curr->get_a()<<","<<curr->get_b()<<")"<<endl;
+			printf("(%2d,%2d)\n",curr->get_a(),curr->get_b());
 		}
 	}
 };
@@ -344,6 +341,7 @@ public:
 
 			}
 		}
+		return 0;
 	}
 	
 	int tdelete(int a,int b)
@@ -396,6 +394,8 @@ public:
 			this->count--;
 			return 1+l+r;
 		}
+
+		return 0;
 		
 	}
 	
@@ -428,7 +428,7 @@ void printTree(int level,int dir,Node *root)
 
 void printPreorder(Node *curr)
 {
-	cout<<"("<<curr->get_a()<<","<<curr->get_b()<<") ";
+	curr->printNode();
 	if(curr->get_left())
 		printPreorder(curr->get_left());
 	if(curr->get_right())
@@ -438,7 +438,7 @@ void printInorder(Node *curr)
 {
 	if(curr->get_left())
 		printInorder(curr->get_left());
-	cout<<"("<<curr->get_a()<<","<<curr->get_b()<<") ";
+	curr->printNode();
 	if(curr->get_right())
 		printInorder(curr->get_right());
 }
@@ -482,9 +482,9 @@ void lex_rec(LinkedList **L,int index,int A)
 	{
 		//cout<<++p<<"-th iteration"<<endl;
 		Node *curr=L[index]->del_first();
+		curr->printNode();
 		int a=curr->get_a();
 		int b=curr->get_b();
-		cout<<"("<<a<<","<<b<<") ";
 		Node *left=curr->get_left();
 		Node *right=curr->get_right();
 		if(left)
@@ -527,7 +527,7 @@ int main()
 
 
 	int a,b;
-	cout<<"\n//For insertion,search or deletion enter a and b with a space in between\n"<<endl;
+	cout<<"\n//For insertion and deletion enter a and b with a space in between\n"<<endl;
 	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
 	cout<<"+++ INSERTION PHASE"<<endl;
 	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
@@ -552,20 +552,30 @@ int main()
 	cout<<"\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
 	cout<<"+++ SEARCH PHASE"<<endl;
 	cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
-	cin>>a>>b;
-	cout<<"("<<a<<","<<b<<") : ";
-	Node *n=T->tsearch(a,b);
-	if(n==NULL)
-		cout<<"Search failed"<<endl;
-	else
-		cout<<"Search successful"<<endl;
-	cin>>a>>b;
-	printf("(%2d,%2d) : ",a,b);
-	n=T->tsearch(a,b);
-	if(n==NULL)
-		cout<<"Search failed"<<endl;
-	else
-		cout<<"Search successful"<<endl;
+	int succ_state=0,fail_state=0;
+	while(succ_state==0 || fail_state==0)
+	{
+		a=rand()%99+1;
+		b=rand()%99+1;
+		Node *n=T->tsearch(a,b);
+		if(n==NULL)
+		{
+			if(fail_state==0)
+			{
+				cout<<"("<<a<<","<<b<<") : Search failed"<<endl;
+				fail_state=1;
+			}
+		}
+		else
+		{
+			if(succ_state==0)
+			{
+				cout<<"("<<a<<","<<b<<") : Search successful"<<endl;
+				succ_state=1;
+			}
+		}
+		
+	}
 
 	cout<<"\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
 	cout<<"+++ DELETION PHASE"<<endl;
