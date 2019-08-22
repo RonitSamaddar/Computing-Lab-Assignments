@@ -80,6 +80,20 @@ public:
 		}
 	}
 
+	int search(int v)
+	{
+		Node *curr=this->start;
+		while(curr!=NULL)
+		{
+			int index=curr->get_index();
+			if(index==v)
+				return 1;
+			curr=curr->get_next();
+		}
+		return 0;
+	}
+
+
 };
 
 class Graph
@@ -91,28 +105,144 @@ private:
 	LinkedList **adj_list;//Array of pointers to the linkedlists
 	int *lv;//Array of vertex weights
 public:
-	//Constructor
+	//Constructors
+	Graph(int n)
+	{
+		this->n=n;
+		this->m=0;
+		this->adj_list=new LinkedList*[this->n];
+		//Alloting memory for each of the linked lists
+		for(int i=0;i<this->n;i++)
+		{
+			this->adj_list[i]=new LinkedList();
+		}
+		//Weights
+		this->lv=new int[this->n];
+		for(int i=0;i<this->n;i++)
+		{
+			this->lv[i]=0;
+		}
+	}
 	Graph(int n,int m)
 	{
 		this->n=n;
 		this->m=m;
 		this->adj_list=new LinkedList*[this->n];
+		//Alloting memory for each of the linked lists
 		for(int i=0;i<this->n;i++)
 		{
 			this->adj_list[i]=new LinkedList();
 		}
-		this->lv=new int[n];
+		this->lv=new int[this->n];
+		//Weights
+		for(int i=0;i<this->n;i++)
+		{
+			this->lv[i]=0;
+		}
+	}
+	int get_n()
+	{
+		return this->n;
+	}
+	int get_m()
+	{
+		return this->m;
 	}
 	void set_weight(int index,int weight)
 	{
 		//function to assign the weight of a particular vertex
 		this->lv[index]=weight;
 	}
-	void add_edge(int u,int v)
+
+	int get_weight(int index)
 	{
-		//function to add an edge from u-index vertex to v-index vertex
+		//function to get the weight of a vertex
+		return this->lv[index];
+	}
+
+	LinkedList **get_edges()
+	{
+		//function to return the adjacency list of a graph
+		return this->adj_list;
+	}
+	
+	void add_edge_un(int u,int v)
+	{
+		//function to add an edge from u-index vertex to v-index vertex for undirected graph
 		adj_list[u]->insert(v);
 		adj_list[v]->insert(u);
+	}
+	void add_edge_dir(int u,int v)
+	{
+		//function to add an edge from u-index vertex to v-index vertex for directed graph
+		adj_list[u]->insert(v);
+	}
+	int is_edge(int u,int v)
+	{
+		//function for searching if edge is there between u and v;
+		return adj_list[u]->search(v);
+	}
+
+	void GR_rec(LinkedList **adj,int u,int curr,int lu,int * visited)
+	{
+
+		//Recursive function called by form_GR where curr is the present node reached 
+		//and lu represents the path length still life.
+		//We need to call this function for all u's
+		
+		visited[curr]=1;//setting present node as visited
+
+		if(lu==0)
+		{
+			//we have reached end of path
+			if(this->adj_list[u]->search(curr)==0)
+			{
+				//we only add the edge if it is already not there
+				this->add_edge_dir(u,curr);
+				this->m++;
+			}
+		}
+		else
+		{
+			Node *st=adj[curr]->start;
+			while(st!=NULL)
+			{
+				//traversing over neighbours of current node
+				int index=st->get_index();
+				if(visited[index]==0)
+					GR_rec(adj,u,index,lu-1,visited);
+				st=st->get_next();
+			}
+		} 
+		visited[curr]=0;//as we backtrack, we set present node as unvisited for other paths
+
+	}
+	void form_GR(Graph *G)
+	{
+		//function of reachability Graph GR to form its adj matrix and number of edges 
+		//by analysing in G to find all vertices v which are at path of length lu
+		//from vertices u of Graph G
+		int G_n=G->get_n();
+		int *visited=new int[G_n];
+
+		//setting weights for the new graph
+		for(int i=0;i<G_n;i++)
+		{
+			visited[i]=0;
+			int weight=G->get_weight(i);
+			this->set_weight(i,weight);
+		}
+		
+
+		LinkedList **adj=G->get_edges();
+		//forming adj_list of new Graph
+		for(int i=0;i<G_n;i++)
+		{
+			this->GR_rec(adj,i,i,G->get_weight(i),visited);
+
+						
+		}
+
 	}
 
 	void prngraph()
@@ -130,9 +260,12 @@ public:
 				{
 					printf("%2d, ",st->get_index());
 					st=st->get_next();
+
 				}
-				printf("%2d\n",st->get_index());
+				printf("%2d",st->get_index());
 			}
+			printf("\n");
+
 
 		}
 	}
@@ -159,7 +292,7 @@ int main()
 	for(int i=0;i<m;i++)
 	{
 		cin>>u[i]>>v[i];
-		G->add_edge(u[i],v[i]);
+		G->add_edge_un(u[i],v[i]);
 	}
 	cout<<"\nn = "<<n<<endl;
 	cout<<"m = "<<m<<endl;
@@ -178,6 +311,13 @@ int main()
 
 	cout<<"\n+++ Input graph"<<endl;
 	G->prngraph();
+
+	Graph *GR=new Graph(G->get_n());
+	GR->form_GR(G);
+	cout<<"\n+++ Reachability Graph"<<endl;
+	GR->prngraph();
+
+
 
 
 }
