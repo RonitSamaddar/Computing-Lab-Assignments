@@ -169,13 +169,13 @@ public:
 	void add_edge_un(int u,int v)
 	{
 		//function to add an edge from u-index vertex to v-index vertex for undirected graph
-		adj_list[u]->insert(v);
-		adj_list[v]->insert(u);
+		this->adj_list[u]->insert(v);
+		this->adj_list[v]->insert(u);
 	}
 	void add_edge_dir(int u,int v)
 	{
 		//function to add an edge from u-index vertex to v-index vertex for directed graph
-		adj_list[u]->insert(v);
+		this->adj_list[u]->insert(v);
 	}
 	int is_edge(int u,int v)
 	{
@@ -242,6 +242,60 @@ public:
 
 						
 		}
+
+	}
+
+	void form_GS(Graph *G,Graph* GR)
+	{
+		int nV=G->get_n();
+		int nVs=nV*nV;
+		int u,v;
+
+		//INITIALIZING WEIGHTS!!!!!
+		for(int i=0;i<nVs;i++)
+		{
+			v=i%nV;
+			u=i/nV;
+			int w_v=G->get_weight(v);
+			int w_u=G->get_weight(u);
+
+			this->set_weight(i,w_u+w_v);
+		}
+
+		//ADDING EDGES
+		LinkedList **adj=GR->get_edges();
+		for(u=0;u<nV;u++)
+		{
+			Node *curr1=adj[u]->start;
+			while(curr1!=NULL)
+			{
+				//Each Iteration of this loop corresponds to one edge of
+				//graph for first robot
+				int u1=curr1->get_index();
+				
+				for(int v=0;v<nV;v++)
+				{
+					Node *curr2=adj[v]->start;
+					while(curr2!=NULL)
+					{
+						//Each Iteration of this loop corresponds to one edge of
+						//graph for second robot
+						int v1=curr2->get_index();
+						int w1=u*nV+v;
+						int w2=u1*nV+v1;
+						if(this->adj_list[w1]->search(w2)==0)
+						{	this->add_edge_dir(w1,w2);
+							this->m++;
+						}
+						curr2=curr2->get_next();
+					}
+					
+				}
+				curr1=curr1->get_next();
+			}
+		}
+
+		
 
 	}
 
@@ -312,10 +366,19 @@ int main()
 	cout<<"\n+++ Input graph"<<endl;
 	G->prngraph();
 
-	Graph *GR=new Graph(G->get_n());
+	int nV=G->get_n();
+
+	Graph *GR=new Graph(nV);
 	GR->form_GR(G);
 	cout<<"\n+++ Reachability Graph"<<endl;
 	GR->prngraph();
+
+	int nVs=nV*nV;
+	Graph *GS=new Graph(nVs);
+	GS->form_GS(G,GR);
+	cout<<"\n+++ Simultaneous reachability Graph"<<endl;
+	GS->prngraph();
+
 
 
 
