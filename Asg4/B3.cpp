@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include<cmath>
+#include<queue>
 #include<typeinfo>
 
 using namespace std;
@@ -8,9 +10,16 @@ using namespace std;
 //class prototypes 
 class Node;
 class LinkedList;
+class Graph;
+
 
 //function prototypes
+LinkedList *track_path(int *parent,int curr,int start);
+void print_queue(queue <int>q);
+void print_path(LinkedList *path,Graph *GS);
 
+
+//class
 
 class Node
 {
@@ -299,6 +308,80 @@ public:
 
 	}
 
+	void BFS_find_path(int s,int t,int mode)
+	{
+		
+		//Finding number of vertices of original and of simultaneous reachability graph
+		int nVs=this->get_n();
+		int nV=sqrt(nVs);
+
+		//Getting adjacency list of simultaneous reachability graph
+		LinkedList **adj=this->get_edges();
+
+		//Initializing parameters required for BFS path search
+		queue <int>q;
+		int visited[nVs];//to mark nodes already visited
+		int parent[nVs];//to mark parent of each node in path
+		for(int i=0;i<nVs;i++)
+		{
+			if(mode==1 && i%nV==i/nV)
+				visited[i]=1;
+			else
+				visited[i]=0;
+			parent[i]=-1;
+		}
+		int start=s*nV+t;
+		int x=start;
+		int dest=t*nV+s;
+
+
+
+		//Running BFS
+		//cout<<"BFS STARTED!!"<<endl;
+		//cout<<"Finding path from "<<start<<" to "<<dest<<endl;
+		visited[x]=1;
+		while(x!=dest)
+		{
+			
+
+			
+			Node *curr=adj[x]->start;
+			while(curr!=NULL)
+			{
+				int index=curr->get_index();
+				//cout<<"Index = "<<index<<endl;
+				if(visited[index]==0)
+				{
+					q.push(index);
+					visited[index]=1;
+					parent[index]=x;
+				}
+				curr=curr->get_next();
+			}
+
+			//cout<<"Current node = "<<x<<endl;
+			//cout<<"VISITED : "<<endl;
+			//for(int i=0;i<nVs;i++)
+			//{
+			//	cout<<"["<<i<<"] = "<<visited[i]<<endl;
+			//}
+			//cout<<"QUEUE : "<<endl;
+			//print_queue(q);
+			//getchar();
+
+			x=q.front();
+			q.pop();
+		}
+
+		//Getting the path as a linked list
+		if(x==dest)
+		{
+			LinkedList *path=track_path(parent,x,start);
+			print_path(path,this);
+		}
+		
+	}
+
 	void prngraph()
 	{
 		//function to print graph in format according to sample outputs
@@ -327,15 +410,72 @@ public:
 
 };
 
+LinkedList *track_path(int *parent,int curr,int start)
+{
+	//forms the paths by backtracking along parent links
+	LinkedList *path=new LinkedList();
+	path->insert(curr);
+	while(curr!=start)
+	{
+		curr=parent[curr];
+		path->insert(curr);
+	}
+	return path;
+}
+void print_queue(queue <int>q)
+{
+	int x=q.front();
+	while(!q.empty())
+	{
+		cout<<x<<" ";
+		q.pop();
+		x=q.front();
+	}
+	cout<<endl;
+}
+void print_path(LinkedList *path,Graph *GS)
+{
+	//prints points in the path, length of path, and total effort
+	//Graph GS object required for getting weights of the points
+	int nVs=GS->get_n();
+	int nV=sqrt(nVs);
+	Node *curr=path->start;
+	int num_steps=0;
+	int effort=0;
+	while(curr!=NULL)
+	{
+		int x=curr->get_index();
+		int v=x%nV;
+		int u=x/nV;
+		cout<<"("<<u<<","<<v<<") ";
+		if(curr->get_next()!=NULL)
+		{
+			num_steps++;
+			effort=effort+GS->get_weight(x);
+		}
+		curr=curr->get_next();
+		
+	}
+	cout<<endl;
+	cout<<"Number of steps = "<<num_steps<<endl;
+	cout<<"Total effort    = "<<effort<<endl;
+
+
+
+}
+
 //MAIN FUNCTION
 int main()
 {
 
+	//GETTING INPUTS
 	int n,m;
+	//Accepting dimensions
 	cin>>n;
 	cin>>m;
 	Graph *G=new Graph(n,m);
 	int arr[n];
+	//Accepting l[u]`s
 	for(int i=0;i<n;i++)
 	{
 		cin>>arr[i];
@@ -343,11 +483,17 @@ int main()
 	}
 	int u[m];
 	int v[m];
+
+	//Accepting edges
 	for(int i=0;i<m;i++)
 	{
 		cin>>u[i]>>v[i];
 		G->add_edge_un(u[i],v[i]);
 	}
+	//Accepting start and end vertices
+	int s,t;
+	cin>>s;
+	cin>>t;
 	cout<<"\nn = "<<n<<endl;
 	cout<<"m = "<<m<<endl;
 	cout<<"+++ Path lengths: ";
@@ -363,21 +509,37 @@ int main()
 	}
 	printf("\n");
 
+	//PRINTING INPUT GRAPH
 	cout<<"\n+++ Input graph"<<endl;
 	G->prngraph();
-
 	int nV=G->get_n();
 
+	//GENERATING AND PRINTING ONE STEP REACHABILITY GRAPH
 	Graph *GR=new Graph(nV);
 	GR->form_GR(G);
 	cout<<"\n+++ Reachability Graph"<<endl;
 	GR->prngraph();
 
+	//GENERATING AND PRINTING SIMULTANEOUS REACHABILITY GRAPH
 	int nVs=nV*nV;
 	Graph *GS=new Graph(nVs);
 	GS->form_GS(G,GR);
 	cout<<"\n+++ Simultaneous reachability Graph"<<endl;
 	GS->prngraph();
+
+	cout<<"\ns = "<<s<<endl;
+	cout<<"t = "<<t<<"\n"<<endl;
+
+	//FINDING PATHS IN SIMULTANEOUS REACHABILITY GRAPH
+	cout<<"+++ Minimum number of steps"<<endl;
+	cout<<"--- Allowing robots to share a node"<<endl;
+	GS->BFS_find_path(s,t,0);//last parameter = mode = 0 for node sharing allowed, 1 for sharing not allowed 
+	cout<<"--- Disallowing robots to share a node"<<endl;
+	GS->BFS_find_path(s,t,1);
+
+	
+	
+
 
 
 
