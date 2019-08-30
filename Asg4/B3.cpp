@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include<climits>
 #include<cmath>
 #include<queue>
 #include<typeinfo>
@@ -8,6 +9,9 @@
 using namespace std;
 
 //class prototypes 
+class Element;
+class Vertex_List;
+
 class Node;
 class LinkedList;
 class Graph;
@@ -20,7 +24,128 @@ void print_path(LinkedList *path,Graph *GS);
 
 
 //class
+class Element
+{
+	//class for representing a any node in the  Vertex List
+public:
+	int index;//index of the node in the Simutaneous Reachability Graph
+	int cost;//cost of path of node from start node of path in Dijkstra
+	//Constructor
+	Element(int ind)
+	{
+		this->index=ind;
+		this->cost=INT_MAX;
+	}
+	Element()
+	{
+		this->index=-1;
+		this->cost=INT_MAX;
+	}
+};
 
+class Vertex_List
+{
+	//class for representing a list of vertex and their costs for Dijkstra
+	
+public:
+	Element *arr;//array starts with 1 index
+	int capacity;
+	int count;
+
+	//Constructors
+	Vertex_List(int cap)
+	{
+		this->capacity=capacity;
+		this->arr=new Element[cap+1];
+		this->count=0;
+		this->arr[0]=*(new Element(-1));//default initializing 0th element as we will start from 1 index
+	}
+	int isEmpty()
+	{
+		return (this->count==0);
+	}
+	void insert(int index,int cost)
+	{
+		//inserting Element(index,cost) in the Vertex List
+		Element p=*(new Element(index)); 
+		p.cost=cost;
+		this->count++;
+		this->arr[this->count]=p;
+		//cout<<"this->count == "<<this->count<<endl;
+		int t=this->count-1;
+		int i=this->count;
+		while(t>=1)
+		{
+			//cout<<"t = "<<t<<", prev element = "<<this->arr[t].cost<<", next element = "<<this->arr[t+1].cost<<endl;
+			if(this->arr[t].cost>p.cost)
+			{
+				this->arr[t+1]=this->arr[t];
+				t--;
+			}
+			else
+			{
+				break;
+			}
+			
+		}
+		this->arr[t+1]=p;
+	}
+
+	Element fetch_min()
+	{
+		return this->arr[1];
+	}
+	int search(int index)
+	{
+		for(int i=1;i<=this->count;i++)
+		{
+			if(this->arr[i].index==index)
+			{
+				return i;
+			}
+		}
+		return 0;
+	}
+	void decrease_key(int index,int new_cost)
+	{
+		int pos=this->search(index);
+		this->arr[pos].cost=new_cost;
+		Element p=this->arr[pos];
+		int t=pos-1;
+		while(t>=1)
+		{
+			//cout<<"t = "<<t<<", prev element = "<<this->arr[t].cost<<", next element = "<<this->arr[t+1].cost<<endl;
+			if(this->arr[t].cost>p.cost)
+			{
+				this->arr[t+1]=this->arr[t];
+				t--;
+			}
+			else
+			{
+				break;
+			}
+		}
+		this->arr[t+1]=p;
+	}
+	void delete_min()
+	{
+		for(int i=2;i<=this->count;i++)
+		{
+			this->arr[i-1]=this->arr[i];
+		}
+		this->count--;
+	}
+	void print_list()
+	{
+		cout<<"LIST : "<<endl;
+		for(int i=1;i<=this->count;i++)
+		{
+			Element p=this->arr[i];
+			cout<<"("<<p.index<<","<<p.cost<<") ";
+		}
+		cout<<endl;
+	}
+};
 class Node
 {
 	//class for representing each node of linked lists in adjacency list
@@ -104,6 +229,7 @@ public:
 
 
 };
+
 
 class Graph
 {
@@ -382,6 +508,114 @@ public:
 		
 	}
 
+
+	void SSSP_find_path(int s,int t,int mode)
+	{
+		
+		//Finding number of vertices of original and of simultaneous reachability graph
+		int nVs=this->get_n();
+		int nV=sqrt(nVs);
+
+		//Getting adjacency list of simultaneous reachability graph
+		LinkedList **adj=this->get_edges();
+
+		//Initializing parameters required for Dijkstra path search
+		Vertex_List *L=new Vertex_List(nVs);
+		int parent[nVs];
+		int start=s*nV+t;
+		int dest=t*nV+s;
+		for(int i=0;i<nVs;i++)
+		{
+			int u=i/nV;
+			int v=i%nV;
+			if(mode==1 && u==v)
+				continue;
+			if(i==start)
+			{
+				L->insert(i,0);//for start node we initialize cost as 0 and parent as -1
+			}
+			else 
+			{
+				L->insert(i,INT_MAX);//for othernodes we initialize cost as infinity and parent as -1
+			}
+			parent[i]=-1;
+			//L->print_list();
+		}
+		//cout<<"AFTER BUILDING LIST"<<endl;
+		//L->print_list();
+		
+
+		//cout<<"DIJKSTRA "<<endl;
+		//cout<<"Start Node = "<<start<<endl;
+		//cout<<"Dest. Node = "<<dest<<endl;
+		Element p;
+		int node;
+		while(L->isEmpty()!=1)
+		{
+						
+			p=L->fetch_min();
+			//cout<<"\n\nNODE FETCHED = "<<p.index<<"\n";
+			L->delete_min();
+			
+			//cout<<"FETCHED NODE DELETED\n";	
+
+			node=p.index;
+			
+			
+			if(node==dest)
+			{
+				//cout<<"NODE = DESTINATION !!!\n";
+				break;
+			}
+			else
+			{
+				//cout<<"NODE != DESTINATION !!!\n";
+				Node *curr=adj[node]->start;
+				//cout<<"ADJACENT NODE = "<<curr->get_index()<<" ";
+				//cout<<"Adjacent nodes : \n";
+				while(curr!=NULL)
+				{
+					int ind=curr->get_index();
+					//cout<<"INDEX = "<<ind<<"\n";
+					int pos=L->search(ind);
+					if(pos!=0)
+					{
+						//cout<<"NODE PRESENT IN HEAP!!\n";
+						int cost=p.cost+this->lv[ind];
+						if(cost<L->arr[pos].cost)
+						{
+							//cout<<"Previous cost = "<<H->arr[pos]->cost<<"\n";
+							//cout<<"New cost = "<<cost<<"\n";
+							//cout<<"COST UPDATED\n";
+							L->decrease_key(ind,cost);
+							parent[ind]=p.index;
+						}
+					}
+
+					curr=curr->get_next();
+				}
+
+			}
+
+			
+		
+			//L->print_list();
+		}
+		
+		//cout<<"DIJKSTRA COMPLETE!!!!!!!!!!!"<<endl;
+		//Getting the path as a linked list
+		if(node==dest)
+		{
+			LinkedList *path=track_path(parent,node,start);
+			print_path(path,this);
+		}
+		else
+		{
+			cout<<"NO PATH AVAILABLE"<<endl;
+		}
+		
+	}
+
 	void prngraph()
 	{
 		//function to print graph in format according to sample outputs
@@ -467,6 +701,37 @@ void print_path(LinkedList *path,Graph *GS)
 //MAIN FUNCTION
 int main()
 {
+	/*
+	cout<<"TESTING HEAP"<<endl;
+	Vertex_List *L=new Vertex_List(5);
+	L->insert(1,6);
+	L->print_list();
+
+	cout<<"\n\n";
+	L->insert(2,5);
+	L->print_list();
+
+	cout<<"\n\n";
+	L->insert(3,4);
+	L->print_list();
+
+	cout<<"\n\n";
+	L->insert(4,3);
+	L->print_list();
+
+	cout<<"\n\n";
+	L->insert(5,2);
+	L->print_list();
+
+	cout<<"Position of index 1 = "<<L->search(1)<<endl;
+	cout<<"After decreasing cost of 1 to 1"<<endl;
+	L->decrease_key(1,1);
+	L->print_list();
+	cout<<"Position of index 1 = "<<L->search(1)<<endl;
+	L->delete_min();
+	L->print_list();
+	*/
+
 
 	//GETTING INPUTS
 	int n,m;
@@ -531,18 +796,19 @@ int main()
 	cout<<"t = "<<t<<"\n"<<endl;
 
 	//FINDING PATHS IN SIMULTANEOUS REACHABILITY GRAPH
+	//BFS----Minimum steps path
 	cout<<"+++ Minimum number of steps"<<endl;
 	cout<<"--- Allowing robots to share a node"<<endl;
 	GS->BFS_find_path(s,t,0);//last parameter = mode = 0 for node sharing allowed, 1 for sharing not allowed 
 	cout<<"--- Disallowing robots to share a node"<<endl;
 	GS->BFS_find_path(s,t,1);
 
+	//Dijkstra----Minimum effort path
+	cout<<"+++ Minimum total combined effort"<<endl;
+	cout<<"--- Allowing robots to share a node"<<endl;
+	GS->SSSP_find_path(s,t,0);//last parameter = mode = 0 for node sharing allowed, 1 for sharing not allowed 
+	cout<<"--- Disallowing robots to share a node"<<endl;
+	GS->SSSP_find_path(s,t,1);
 	
-	
-
-
-
-
-
-
 }
+	
