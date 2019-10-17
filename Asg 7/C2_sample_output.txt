@@ -1,0 +1,320 @@
+N = 32   [The maximum number of nodes in the BST]
+P = 3    [The number of allowed user processes]
+
+****************************************************************************************************
+CONTROLLER PROCESS
+****************************************************************************************************
+
++++ Controller sets up the shared memory
++++ Controller sets up the request queue
+    R 7484
+    R 7490
+    S 7484 102
+    R 7496
+    S 7490 239
+    I 7490 247
+    S 7484 186
+    I 7484 248
+    R 7502
+    I 7496 290
+    I 7484 250
+    I 7490 290
+    P 7490
+    I 7496 156
+    P 7490
+    I 7484 156
+    P 7484
+    S 7496 195
+    I 7490 142
+    I 7490 106
+    I 7484 142
+    I 7484 170
+    P 7496
+    S 7490 294
+    S 7484 169
+    I 7496 176
+    I 7484 270
+    S 7490 144
+    S 7496 206
+    P 7490
+    S 7484 260
+    P 7490
+    P 7496
+    I 7484 119
+    P 7490
+    S 7496 198
+    I 7490 171
+    S 7496 147
+    S 7484 163
+    P 7496
+    S 7496 263
+    S 7490 271
+    I 7484 262
+    S 7496 252
+    I 7490 213
+    S 7484 253
+    I 7490 268
+    I 7496 153
+    I 7490 186
+    I 7484 105
+    I 7490 253
+    S 7484 235
+    I 7484 249
+    S 7496 287
+    S 7490 191
+    P 7490
+    P 7496
+    S 7484 295
+    P 7490
+    S 7490 164
+    P 7496
+    P 7484
+    S 7484 280
+    I 7484 277
+    S 7496 291
+    S 7490 144
+    P 7496
+    S 7484 221
+    P 7484
+    S 7490 168
+    I 7496 185
+    I 7484 142
+    S 7496 268
+    I 7490 139
+    S 7490 204
+    S 7484 295
+    I 7496 253
+    I 7490 172
+    S 7484 100
+    S 7490 259
+    S 7490 212
+    P 7496
+    P 7484
+    P 7484
+    P 7484
+    P 7490
+    I 7496 123
+    P 7496
+    I 7484 284
+    S 7490 117
+    S 7496 133
+    P 7484
+    I 7496 272
+    S 7490 179
+    I 7490 295
+    I 7484 107
+    S 7484 284
+    P 7484
+    I 7496 286
+    I 7490 297
+    P 7496
+    P 7490
+    S 7484 252
+    P 7490
+    P 7496
+    I 7484 295
+    S 7490 198
+    P 7484
+    P 7496
+    S 7490 114
+    S 7484 107
+    P 7490
+    I 7496 266
+    P 7484
+    S 7490 150
+    P 7496
+    Q 7496
++++ User process 2 with pid 7496 going to exit
++++ User process 2 made 10 search, 12 print, and 10 insert requests
+    S 7490 176
+    S 7484 278
+    S 7484 191
+    P 7490
+    I 7484 115
+    I 7490 111
+    P 7490
+    Q 7490
++++ User process 1 with pid 7490 going to exit
++++ User process 1 made 17 search, 13 print, and 14 insert requests
+    P 7484
+    Q 7484
++++ User process 0 with pid 7484 going to exit
++++ User process 0 made 17 search, 11 print, and 16 insert requests
+
+****************************************************************************************************
+USER PROCESS 0
+****************************************************************************************************
+
++++ User process with PID 7484 gets access to the shared memory
++++ User process with PID 7484 sets up the private queues
++++ User process with PID 7484 is now registered
+    Search(102): Failed
+    Search(186): Failed
+    Insert(248): Root created
+    Insert(250): Right child of 247 created
+    Insert(156): Key exists
+    Inorder listing of the keys in the BST: 156 247 250 290
+    Insert(142): Key exists
+    Insert(170): Right child of 156 created
+    Search(169): Failed
+    Insert(270): Left child of 290 created
+    Search(260): Failed
+    Insert(119): Right child of 106 created
+    Search(163): Failed
+    Insert(262): Left child of 270 created
+    Search(253): Failed
+    Insert(105): Left child of 106 created
+    Search(235): Failed
+    Insert(249): Left child of 250 created
+    Search(295): Failed
+    Inorder listing of the keys in the BST: 105 106 119 142 153 156 170 171 176 186 213 247 249 250 253 262 268 270 290
+    Search(280): Failed
+    Insert(277): Right child of 270 created
+    Search(221): Failed
+    Inorder listing of the keys in the BST: 105 106 119 142 153 156 170 171 176 186 213 247 249 250 253 262 268 270 277 290
+    Insert(142): Key exists
+    Search(295): Failed
+    Search(100): Failed
+    Inorder listing of the keys in the BST: 105 106 119 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 277 290
+    Inorder listing of the keys in the BST: 105 106 119 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 277 290
+    Inorder listing of the keys in the BST: 105 106 119 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 277 290
+    Insert(284): Right child of 277 created
+    Inorder listing of the keys in the BST: 105 106 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 277 284 290
+    Insert(107): Left child of 119 created
+    Search(284): Success
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 290 295
+    Search(252): Failed
+    Insert(295): Key exists
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Search(107): Success
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Search(278): Failed
+    Search(191): Failed
+    Insert(115): Tree full
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
++++ User process with PID 7484 going to exit
++++ User process with PID 7484 has made 17 search, 11 print, and 16 insert requests
+
+****************************************************************************************************
+USER PROCESS 1
+****************************************************************************************************
+
++++ User process with PID 7490 gets access to the shared memory
++++ User process with PID 7490 sets up the private queues
++++ User process with PID 7490 is now registered
+    Search(239): Failed
+    Insert(247): Root created
+    Insert(290): Right child of 250 created
+    Inorder listing of the keys in the BST: 247 250 290
+    Inorder listing of the keys in the BST: 156 247 250 290
+    Insert(142): Left child of 156 created
+    Insert(106): Left child of 142 created
+    Search(294): Failed
+    Search(144): Failed
+    Inorder listing of the keys in the BST: 106 142 156 170 176 247 250 270 290
+    Inorder listing of the keys in the BST: 106 142 156 170 176 247 250 270 290
+    Inorder listing of the keys in the BST: 106 119 142 156 170 176 247 250 270 290
+    Insert(171): Left child of 176 created
+    Search(271): Failed
+    Insert(213): Right child of 176 created
+    Insert(268): Right child of 262 created
+    Insert(186): Left child of 213 created
+    Insert(253): Left child of 262 created
+    Search(191): Failed
+    Inorder listing of the keys in the BST: 105 106 119 142 153 156 170 171 176 186 213 247 249 250 253 262 268 270 290
+    Inorder listing of the keys in the BST: 105 106 119 142 153 156 170 171 176 186 213 247 249 250 253 262 268 270 290
+    Search(164): Failed
+    Search(144): Failed
+    Search(168): Failed
+    Insert(139): Right child of 119 created
+    Search(204): Failed
+    Insert(172): Right child of 171 created
+    Search(259): Failed
+    Search(212): Failed
+    Inorder listing of the keys in the BST: 105 106 119 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 277 290
+    Search(117): Failed
+    Search(179): Failed
+    Insert(295): Right child of 290 created
+    Insert(297): Right child of 295 created
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Search(198): Failed
+    Search(114): Failed
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Search(150): Failed
+    Search(176): Success
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Insert(111): Tree full
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
++++ User process with PID 7490 going to exit
++++ User process with PID 7490 has made 17 search, 13 print, and 14 insert requests
+
+****************************************************************************************************
+USER PROCESS 2
+****************************************************************************************************
+
++++ User process with PID 7496 gets access to the shared memory
++++ User process with PID 7496 sets up the private queues
++++ User process with PID 7496 is now registered
+    Insert(290): Root created
+    Insert(156): Left child of 247 created
+    Search(195): Failed
+    Inorder listing of the keys in the BST: 106 142 156 170 247 250 290
+    Insert(176): Right child of 170 created
+    Search(206): Failed
+    Inorder listing of the keys in the BST: 106 142 156 170 176 247 250 270 290
+    Search(198): Failed
+    Search(147): Failed
+    Inorder listing of the keys in the BST: 106 119 142 156 170 171 176 247 250 270 290
+    Search(263): Failed
+    Search(252): Failed
+    Insert(153): Right child of 142 created
+    Search(287): Failed
+    Inorder listing of the keys in the BST: 105 106 119 142 153 156 170 171 176 186 213 247 249 250 253 262 268 270 290
+    Inorder listing of the keys in the BST: 105 106 119 142 153 156 170 171 176 186 213 247 249 250 253 262 268 270 290
+    Search(291): Failed
+    Inorder listing of the keys in the BST: 105 106 119 142 153 156 170 171 176 186 213 247 249 250 253 262 268 270 277 290
+    Insert(185): Left child of 186 created
+    Search(268): Success
+    Insert(253): Key exists
+    Inorder listing of the keys in the BST: 105 106 119 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 277 290
+    Insert(123): Left child of 139 created
+    Inorder listing of the keys in the BST: 105 106 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 277 290
+    Search(133): Failed
+    Insert(272): Left child of 277 created
+    Insert(286): Right child of 284 created
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
+    Insert(266): Tree full
+    Inorder listing of the keys in the BST: 105 106 107 119 123 139 142 153 156 170 171 172 176 185 186 213 247 249 250 253 262 268 270 272 277 284 286 290 295 297
++++ User process with PID 7496 going to exit
++++ User process with PID 7496 has made 10 search, 12 print, and 10 insert requests
+
+****************************************************************************************************
+USER PROCESS 3
+****************************************************************************************************
+
++++ User process with PID 7502 gets access to the shared memory
++++ User process with PID 7502 sets up the private queues
+^C
+
+****************************************************************************************************
+USER PROCESS WITHOUT THE CONTROLLER RUNNING
+****************************************************************************************************
+
+*** The controller is not ready yet. Exiting...
+
+****************************************************************************************************
+DIRECTORY LISTING OF THE FIFO QUEUES
+****************************************************************************************************
+
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:54 doneQ-7484|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:54 doneQ-7490|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:54 doneQ-7496|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:53 doneQ-7502|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:54 grantQ-7484|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:54 grantQ-7490|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:54 grantQ-7496|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:53 grantQ-7502|
+prw-r--r-- 1 abhij abhij 0 Oct 11 19:54 reqQ|
