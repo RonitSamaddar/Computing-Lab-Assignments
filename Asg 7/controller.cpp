@@ -31,6 +31,8 @@ int main()
 		exit(1);
 	}
 	cout<<"We have a shared memory segment"<<endl;
+	getchar();
+	getchar();
 
 
 	
