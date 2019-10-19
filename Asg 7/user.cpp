@@ -1,13 +1,17 @@
 //HEADER INCLUSIONS
 #include<iostream>//for cin,cout
-#include<sys/types.h>//for ftok(),shmat()
+#include<sys/types.h>//for ftok(),shmat(),getpid()
 #include<sys/ipc.h>//for ftok(),shmget()
 #include<sys/shm.h>//for shmget(),shmat()
 #include<cstdlib>//for exit()
 #include<cstdio>//for perror()
+#include<sys/stat.h>//for mknod(),open()
+#include<fcntl.h>//for open()
+#include<cstring>//for strcmp()
+#include<unistd.h>//for read(),write(),getpid()
 
 //MACRO DEFINATIONS
-#define  shm_key 999//for use in shmget
+#define  SHM_KEY 999//for use in shmget
 
 using namespace std;
 
@@ -223,11 +227,9 @@ public:
 
 int main()
 {
-	int N,P;
-	cin>>N>>P;
 	
-	int size=(sizeof(int)*(N*3+2));
-	int shmid=shmget(shm_key,size,0666|IPC_CREAT);//generating id of shared memory
+	/*int size=(sizeof(int)*(N*3+2));
+	int shmid=shmget(SHM_KEY,size,0666|IPC_CREAT);//generating id of shared memory
 	if(shmid==-1)
 	{
 		perror("Error: ");
@@ -238,24 +240,48 @@ int main()
 	{
 		perror("Error: ");
 		exit(1);
+	}*/
+
+	int id=getpid();
+
+	//CHEKCING IF REQUEST QUEUE RQ IS AVAILABLE
+	mknod("RQ",S_IFIFO|0666,0);//creation of RQ(request) fifo pipe
+	int rq_fd=open("RQ",O_WRONLY|O_NDELAY);//opening the file descriptor corresponding to the FIFO request pipe
+	if(rq_fd==-1)
+	{
+		cout<<"*** The controller is not ready yet. Exiting..."<<endl;
+		exit(1);
 	}
-	Tree t=*(new Tree(mem,N));
-	t.BSTsearch(50);
+	cout<<"PIPE RQ OPENED FOR WRITING"<<endl;
 
-	t.BSTinsert(50);
+	//Sending registration request
+	char *req=new char[7];
+	sprintf(req,"R %d",id);
+	write(rq_fd,req,sizeof(req));
 
-	t.BSTsearch(20);
+	//CREATION OF GQ(U) and DQ(U) queues
+	char GQ[7],DQ[7];
+	sprintf(GQ,"GQ%d",id);
+	sprintf(DQ,"DQ%d",id);
+	mknod(GQ,S_IFIFO|0666,0);//creation of GQ(U) pipe
+	int gq_fd=open(GQ,O_RDONLY);//opening the file descriptor corresponding to the FIFO GQ
+	cout<<"PIPE GQ OPENED"<<endl;
+	mknod(DQ,S_IFIFO|0666,0);//creation of DQ(U) pipe
+	int dq_fd=open(DQ,O_WRONLY);//opening the file descriptor corresponding to the FIFO DQ
+	cout<<"PIPE DQ OPENED"<<endl;
 
-	t.BSTinsert(20);
-
-	t.BSTinsert(60);
-
-	t.BSTinsert(40);
-
-	t.BSTinsert(75);
-
-	t.BSTsearch(60);
-	t.BSTsearch(61);
-	t.BSTinorder();
+	
+	while(true)
+	{
+		char *s=new char[20];
+		cout<<"ENTER STRING = "<<endl;
+		gets(s);
+		write(rq_fd,s,sizeof(s));
+		//cout<<"CMP = "<<strcmp(s,"EXIT")<<"\n"<<endl;
+		if(strcmp(s,"EXIT")==0)
+		{
+			break;
+		}
+	}
 
 }
