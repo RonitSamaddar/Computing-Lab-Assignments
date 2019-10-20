@@ -9,6 +9,7 @@
 #include<fcntl.h>//for open()
 #include<cstring>//for strcmp()
 #include<unistd.h>//for read(),write(),getpid()
+#include<cmath>//for ceil()
 
 //MACRO DEFINATIONS
 #define  SHM_KEY 999//for use in shmget
@@ -221,6 +222,15 @@ public:
 	}
 };
 
+int rand_int(int l,int u)
+{
+	int x=u+1;
+	while(x==u+1)
+		x=(int)(rand()*1.0*(u+1-l)/RAND_MAX+(float)l);
+	cout<<"x = "<<x<<endl;
+	return x;
+}
+
 
 
 
@@ -245,7 +255,7 @@ int main()
 	int id=getpid();
 
 	//CHEKCING IF REQUEST QUEUE RQ IS AVAILABLE
-	mknod("RQ",S_IFIFO|0666,0);//creation of RQ(request) fifo pipe
+	//mknod("RQ",S_IFIFO|0666,0);//creation of RQ(request) fifo pipe
 	int rq_fd=open("RQ",O_WRONLY|O_NDELAY);//opening the file descriptor corresponding to the FIFO request pipe
 	if(rq_fd==-1)
 	{
@@ -258,30 +268,60 @@ int main()
 	char *req=new char[7];
 	sprintf(req,"R %d",id);
 	write(rq_fd,req,sizeof(req));
+	cout<<"User Registed"<<endl;
 
 	//CREATION OF GQ(U) and DQ(U) queues
 	char GQ[7],DQ[7];
 	sprintf(GQ,"GQ%d",id);
 	sprintf(DQ,"DQ%d",id);
+	cout<<"Creating GQ and DQ pipes"<<endl;
 	mknod(GQ,S_IFIFO|0666,0);//creation of GQ(U) pipe
 	int gq_fd=open(GQ,O_RDONLY);//opening the file descriptor corresponding to the FIFO GQ
 	cout<<"PIPE GQ OPENED"<<endl;
 	mknod(DQ,S_IFIFO|0666,0);//creation of DQ(U) pipe
-	int dq_fd=open(DQ,O_WRONLY);//opening the file descriptor corresponding to the FIFO DQ
+	int dq_fd=open(DQ,O_WRONLY|O_NDELAY);//opening the file descriptor corresponding to the FIFO DQ
 	cout<<"PIPE DQ OPENED"<<endl;
 
 	
 	while(true)
 	{
-		char *s=new char[20];
-		cout<<"ENTER STRING = "<<endl;
-		gets(s);
-		write(rq_fd,s,sizeof(s));
-		//cout<<"CMP = "<<strcmp(s,"EXIT")<<"\n"<<endl;
-		if(strcmp(s,"EXIT")==0)
+		cout<<"Generating request... "<<endl;
+		char s[21];
+		//cout<<"ENTER STRING = "<<endl;
+		//gets(s);
+		int req_no=rand_int(1,3);
+		int key=rand_int(1,1000);
+		if(req_no==1)//Search
 		{
-			break;
+			sprintf(s,"S %d %d",id,key);
 		}
+		else if(req_no==2)
+		{
+			sprintf(s,"P %d",id);
+		}
+		else if(req_no==3)
+		{
+			sprintf(s,"S %d %d",id,key);
+		}
+		cout<<"To be Written s = "<<s<<endl;
+		write(rq_fd,s,strlen(s));
+		cout<<"s written"<<endl;
+		
+
+		/*int N;
+		read(gq_fd,&N,sizeof(N));
+		cout<<"Granted permission with token = "<<N<<endl;*/
+		getchar();
+		//cout<<"CMP = "<<strcmp(s,"EXIT")<<"\n"<<endl;
 	}
+	//Code for last print request here
+
+
+	//Quit Request Code here
+
+	close(dq_fd);
+	close(gq_fd);
+	close(rq_fd);
+
 
 }
