@@ -76,29 +76,24 @@ public:
 	Tree()
 	{
 		mem=NULL;
-		memwrite_N(mem,0);//Value of N
-		memwrite_n(mem,0);//Value of n
 	}
-	Tree(int *shm_mem,int cap)
+	Tree(int *shm_mem)
 	{
 		mem=shm_mem;
-		memwrite_N(mem,cap);//Value of N
-		memwrite_n(mem,0);//Value of n
 	}
 	
 	//we use the shared memory as a single dimensional integer array of the form 
 	//N,n,Key0,LeftChild0,RightChild0,Key1,LeftChild1,RightChild1,........
-	void BSTinsert(int key)
+	int BSTinsert(int key)
 	{
 
 		int n=memread_n(mem);
 		int N=memread_N(mem);
 		if(n==N)
 		{
-			return;
+			return -1;
 		}
 		int curr_node=n;//node number where current node must be entered in memory
-		memwrite_n(mem,n+1); //updating value of n in shared memory
 		memwrite_node_key(mem,curr_node,key); //writing key in new node
 		//writing -1 as new node currently has no child
 		memwrite_node_left(mem,curr_node,-1);
@@ -154,6 +149,8 @@ public:
 		{
 			printf("    Insert(%d): Root created\n",key);
 		}
+		memwrite_n(mem,n+1); //updating value of n in shared memory
+		return 0;
 	}
 
 	void BSTsearch(int key)
@@ -227,7 +224,7 @@ int rand_int(int l,int u)
 	int x=u+1;
 	while(x==u+1)
 		x=(int)(rand()*1.0*(u+1-l)/RAND_MAX+(float)l);
-	cout<<"x = "<<x<<endl;
+	//cout<<"x = "<<x<<endl;
 	return x;
 }
 
@@ -238,24 +235,13 @@ int rand_int(int l,int u)
 int main()
 {
 	
-	/*int size=(sizeof(int)*(N*3+2));
-	int shmid=shmget(SHM_KEY,size,0666|IPC_CREAT);//generating id of shared memory
-	if(shmid==-1)
-	{
-		perror("Error: ");
-		exit(1);
-	}
-	int *mem=(int *)shmat(shmid,(void *)0,0);//attaching to the shared memory
-	if(*mem==-1)
-	{
-		perror("Error: ");
-		exit(1);
-	}*/
+	
 
 	int id=getpid();
+	srand(id);
 
-	//CHEKCING IF REQUEST QUEUE RQ IS AVAILABLE
-	//mknod("RQ",S_IFIFO|0666,0);//creation of RQ(request) fifo pipe
+	//CHECKING IF REQUEST QUEUE RQ IS AVAILABLE
+	mknod("RQ",S_IFIFO|0666,0);//creation of RQ(request) fifo pipe
 	int rq_fd=open("RQ",O_WRONLY|O_NDELAY);//opening the file descriptor corresponding to the FIFO request pipe
 	if(rq_fd==-1)
 	{
@@ -270,6 +256,25 @@ int main()
 	write(rq_fd,req,sizeof(req));
 	cout<<"User Registed"<<endl;
 
+	//Opening the shared memory
+	int size=0;
+	int shmid=shmget(SHM_KEY,size,0666|IPC_CREAT);//generating id of shared memory
+	if(shmid==-1)
+	{
+		perror("Error: ");
+		exit(1);
+	}
+	int *mem=(int *)shmat(shmid,(void *)0,0);//attaching to the shared memory
+	if(*mem==-1)
+	{
+		perror("Error: ");
+		exit(1);
+	}
+	int N=*(mem);
+	int n=*(mem+1);
+	Tree *T=new Tree(mem);
+
+
 	//CREATION OF GQ(U) and DQ(U) queues
 	char GQ[7],DQ[7];
 	sprintf(GQ,"GQ%d",id);
@@ -277,18 +282,18 @@ int main()
 	cout<<"Creating GQ and DQ pipes"<<endl;
 	mknod(GQ,S_IFIFO|0666,0);//creation of GQ(U) pipe
 	int gq_fd=open(GQ,O_RDONLY);//opening the file descriptor corresponding to the FIFO GQ
-	cout<<"PIPE GQ OPENED"<<endl;
+	cout<<"PIPE GQ OPENED "<<gq_fd<<endl;
 	mknod(DQ,S_IFIFO|0666,0);//creation of DQ(U) pipe
-	int dq_fd=open(DQ,O_WRONLY|O_NDELAY);//opening the file descriptor corresponding to the FIFO DQ
-	cout<<"PIPE DQ OPENED"<<endl;
+	int dq_fd=open(DQ,O_WRONLY);//opening the file descriptor corresponding to the FIFO DQ
+	cout<<"PIPE DQ OPENED"<<dq_fd<<endl;
 
-	
+	//LOOP FOR SENDING REQUESTS
+	char s[21];
+	int X;
 	while(true)
 	{
 		cout<<"Generating request... "<<endl;
-		char s[21];
-		//cout<<"ENTER STRING = "<<endl;
-		//gets(s);
+		//GENERATING RANDOM REQUESTS AND KEYS
 		int req_no=rand_int(1,3);
 		int key=rand_int(1,1000);
 		if(req_no==1)//Search
@@ -301,27 +306,85 @@ int main()
 		}
 		else if(req_no==3)
 		{
-			sprintf(s,"S %d %d",id,key);
+			sprintf(s,"I %d %d",id,key);
 		}
 		cout<<"To be Written s = "<<s<<endl;
-		write(rq_fd,s,strlen(s));
+		write(rq_fd,s,strlen(s));//Writing requests to RQ
 		cout<<"s written"<<endl;
 		
 
-		/*int N;
-		read(gq_fd,&N,sizeof(N));
-		cout<<"Granted permission with token = "<<N<<endl;*/
+		//READING FOR GRANT TOKEN
+		read(gq_fd,&X,sizeof(X));
+		cout<<"Granted permission with token = "<<X<<endl;
+		int iflag=0;
+		if(s[0]=='S')
+		{
+			cout<<"BST search"<<endl;
+			T->BSTsearch(key);
+			cout<<"Search DONE!!"<<endl;
+		}
+		else if(s[0]=='P')
+		{
+			cout<<"BST inorder"<<endl;
+			T->BSTinorder();
+			cout<<"Inorder DONE!!"<<endl;
+		}
+		else if(s[0]=='I')
+		{
+			cout<<"BST insert"<<endl;
+			iflag=T->BSTinsert(key);
+			cout<<"Insertion done"<<endl;
+			
+		}
+		//Sending Back Done(Completed token)
+		write(dq_fd,&X,sizeof(X));
+		cout<<"Sent back Done Token"<<endl;
+
+		if(iflag==-1)
+		{
+				cout<<"End of loop"<<endl;
+				break;
+		}
+
 		getchar();
 		//cout<<"CMP = "<<strcmp(s,"EXIT")<<"\n"<<endl;
 	}
-	//Code for last print request here
+
+	//LAST PRINT REQUEST
+	sprintf(s,"P %d",id);
+	cout<<"Last Print Request"<<endl;
+	write(rq_fd,s,strlen(s));//Writing request to RQ
+	cout<<"Print Request Sent"<<endl;
+	read(gq_fd,&X,sizeof(X));//Reading for Grant token
+	cout<<"Granted permission with token = "<<X<<endl;
+	cout<<"BST inorder"<<endl;
+	T->BSTinorder();//BST inorder
+	cout<<"Inorder DONE!!"<<endl;
+	write(dq_fd,&X,sizeof(X));//Sending Back Done(Completed token)
+	cout<<"Sent back Done Token"<<endl;
+
+
 
 
 	//Quit Request Code here
+	sprintf(s,"Q %d",id);
+	cout<<"Quit Request"<<endl;
+	write(rq_fd,s,strlen(s));//Writing request to RQ
+	cout<<"Quit Request Sent"<<endl;
 
+
+	//Clsoing and removing all queues
 	close(dq_fd);
+	remove(DQ);
 	close(gq_fd);
+	remove(GQ);
 	close(rq_fd);
+	remove("RQ");
+
+	//Detaching from SHM
+	shmdt(mem);
+	shmctl(shmid,IPC_RMID,NULL);
+
 
 
 }
