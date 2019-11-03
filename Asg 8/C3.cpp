@@ -1,6 +1,6 @@
 /*
-TO DO = 	1) Write shared memory read and write functions
-			2) Initialie adjacency matrix for random graph
+TO DO = 	1) Initialize adjacency matrix for random graph
+			2) Prints the Random Graph as per output format
 */
 
 
@@ -11,6 +11,12 @@ TO DO = 	1) Write shared memory read and write functions
 #include <sys/types.h>				// ftok(), shmat()
 #include <sys/ipc.h>				// ftok(), shmget()
 #include <sys/shm.h>				// shmget(), shmat()
+#include <cmath>					// log(), ceil()
+
+//MACRO DEFINATIONS
+#define N_VALUE 10
+#define P_VALUE 3
+#define EDGE_PROBABILITY 0.4 // ==0.4(if n<=10) else = 5/N
 
 
 using namespace std;
@@ -30,7 +36,6 @@ using namespace std;
 
 
 //FUNCTION DEFINATIONS
-int *shm_init(char *,char ,int);
 void mem_writeN(int *,int);
 int mem_readN(int *);
 void mem_writeP(int *,int);
@@ -69,36 +74,25 @@ int main()
 	char ftok_ch;//character for ftok argument
 	int N;// dimension of graph
 	int P;// Number of child processes
+	long int size;//size of shared memory required
+	int *mem;//Pointer to shared memory
+	key_t key;//key for accessing shared memory
+	int shmid;//id for referencing shared memory
+
+	int i,j;//Loop iterators
+	float bl;//Probability of each edge in adjacency graph
+
 
 	//PARAMETER INITIALIZATIONS
-	N=5;//CHANGE TO 1000
-	P=3;//CHANGE TO 4
+	N=N_VALUE;
+	P=P_VALUE;
 
 
 	//GETTING SHARED MEMORY SEGMENT M
-	ftok_file="C3.pdf";
-	ftok_ch='C';
-	int size=N*(N+2)+2*P+5;
-	int *mem=shm_init(ftok_file,ftok_ch,size);
-
-	
-
-
-}
-
-
-
-
-
-int *shm_init(char *file,char ch,int size)
-{
-	key_t key;//key for accessing shared memory
-	int shmid;//id for referencing shared memory
-	int *mem;//memory pointer
-
-
-
-	key=ftok(file,ch);//generating key
+	ftok_file="C3.cpp";
+	ftok_ch='D';
+	size=100000000;
+	key=ftok(ftok_file,ftok_ch);//generating key
 	if(key==-1)
 	{
 		perror("Error: ");
@@ -118,10 +112,53 @@ int *shm_init(char *file,char ch,int size)
 		perror("Error: ");
 		exit(1);
 	}
+	//cout<<"HELLO1"<<endl;
+	mem_writeN(mem,N);
+	//cout<<"HELLO2"<<endl;
+	mem_writeP(mem,P);
+	//cout<<"HELLO3"<<endl;
 
-	return mem;
+	
+
+	//GENERATING ADACENCY MATRIX FOR RANDOM GRAPH
+	mem_initAdj(mem);
+	for(i=0;i<N;i++)
+	{
+		for(j=0;j<N;j++)
+		{
+			if(i!=j)
+			{
+				bl=rand()*1.0/RAND_MAX;
+				//cout<<bl<<" ";
+				if(bl<=EDGE_PROBABILITY)
+				{
+					mem_writeEdge(mem,i,j);
+				}
+			}
+
+		}
+	}
+	cout<<endl;
+	cout<<"+++ Input graph"<<endl;
+	for(int i=0;i<N;i++)
+	{
+		printf("    %4d -> ",i);
+		for(int j=0;j<N;j++)
+		{
+			if(mem_readEdge(mem,i,j)==1)
+			{
+				printf("%4d ",j);
+			}			
+		}
+		cout<<endl;
+	}
+
+	
+	shmdt(mem);
+	shmctl(shmid,IPC_RMID,NULL);
 
 }
+
 
 void mem_writeN(int *mem,int n)
 {
@@ -141,6 +178,7 @@ void mem_initAdj(int *mem)
 	{
 		for(j=0;j<N;j++)
 		{
+			//cout<<"HELLO"<<i<<j<<endl;
 			*(mem+2+i*N+j)=0;
 		}
 	}
@@ -358,6 +396,7 @@ void mem_printChunk(int *mem)
 	cout<<endl;
 
 }
+
 
 
 
