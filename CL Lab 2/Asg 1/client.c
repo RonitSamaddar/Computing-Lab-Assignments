@@ -25,6 +25,8 @@
 
 int main()
 {
+
+    //VARIABLE DECLARATIONS
 	int sock;										//socket file descriptor
 	struct sockaddr_in address;						//structure for socket address details
 	int check;										//variable for error checks
@@ -41,11 +43,15 @@ int main()
 	socklen_t optlen;								//size of options field										
 
 
-	printf("ENTER COMMAND :\n");
-	buffer=(char *)malloc(LineBytes*sizeof(char));
-	buffer2=(char *)malloc(LineBytes*sizeof(char));
+    //Allocating memory for character arrays
+    buffer=(char *)malloc(LineBytes*sizeof(char));
+    buffer2=(char *)malloc(LineBytes*sizeof(char));
+
+	//Inputing Command to send
+    printf("ENTER COMMAND :\n");
 	gets(buffer);
 
+    //Socket establishment
 	sock=socket(AF_INET,SOCK_STREAM,0);				//AF_INET = for IPV4 operations			
 	if(sock==-1)									//SOCK_STREAM = for stream/connection based sockets
     {
@@ -54,17 +60,18 @@ int main()
     }
     printf("Socket established\n");
 
+    //Setting options for the socket
     opt=1;
 	optlen=sizeof(opt);
 	setsockopt(sock,SOL_SOCKET,SO_REUSEADDR|SO_REUSEPORT,&opt,optlen);
 
-
+    //setting IP address and port details for the socket
     memset((void *)&address,0,sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(INADDR_ANY);	//INADDR_ANY binds socket to all available interfaces
     address.sin_port = htons(PORT);
    
-
+    //Connecting to the server
    	check=connect(sock, (struct sockaddr *)&address, sizeof(address));
     if(check< 0)
     {
@@ -73,25 +80,40 @@ int main()
     }
     printf("Client Connected\n");
     //puts(buffer);
+
+    //Sending command to server
     write(sock,buffer,strlen(buffer));
     if(buffer[0]=='R')
     {
-    	read(sock,buffer2,LineBytes);
-    	printf("\nRequired Line = \t\n");
-    	puts(buffer2);
+        //Getting corresponding line from server
+    	read(sock,buffer2,LineBytes);               
+        if(buffer2==NULL||buffer2[0]=='\0')
+        {
+            printf("No such line exists\n");
+        }
+        else
+        {
+            printf("\nRequired Line = \t\n");
+            puts(buffer2);
+        }
+    	
     }
     if(buffer[0]=='W')
     {
+        //Getting acknowledgement from server
     	read(sock,buffer2,8);
+        //puts(buffer2);
     	if(buffer2[0]=='S')
     	{
     		printf("Writing Successful\n");
     	}
-    	else if(buffer[1]=='F')
+    	else if(buffer2[0]=='F')
     	{
     		printf("Writing Failed\n");
     	}
-    }	
+    }
+
+    //Closing sockets	
 	close(client_sock);
 	close(sock);
 
