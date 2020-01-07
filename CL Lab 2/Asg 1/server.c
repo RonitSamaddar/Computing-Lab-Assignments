@@ -6,6 +6,8 @@
 #include<sys/socket.h>		// socket()
 #include<sys/types.h>		// socket()
 #include <netinet/in.h>		// sockaddr_in
+#include<unistd.h>			// read(),write(),close()
+
 /*#include<sys/socket.h>
 #include<sys/types.h>
 #include <netinet/in.h>
@@ -16,7 +18,7 @@
 
 //MACRO DEFINATIONS
 #define InputFile "input.txt"
-#define LineBytes 30
+#define LineBytes 256
 #define PORT 6000
 
 //FUNCTION PROTOTYPES
@@ -32,7 +34,13 @@ int main()
 	int addrlen;									//variable for storing structure size
 	int x;											//return of bind system call
 	int y;											//return of listen system call
-
+	struct sockaddr_in addr_client; 				//address of client
+	socklen_t length_client; 						//length of client address
+	int client_sock;								//new file descriptor returned by accept
+	int check;										//variable for other error checks
+	char *buffer,*buffer2;							//buffers for storing strings
+	int opt;										//options field for setsockopt
+	socklen_t optlen;								//size of options field
 
 	sock=socket(AF_INET,SOCK_STREAM,0);				//AF_INET = for IPV4 operations			
 	if(sock==-1)									//SOCK_STREAM = for stream/connection based sockets
@@ -40,6 +48,11 @@ int main()
         perror("SOCKET ERROR ");
         exit(1);
     }
+    printf("Socket established\n");
+
+    opt=1;
+	optlen=sizeof(opt);
+	setsockopt(sock,SOL_SOCKET,SO_REUSEADDR|SO_REUSEPORT,&opt,optlen);
 
 
     memset((void *)&address,0,sizeof(address));
@@ -53,6 +66,7 @@ int main()
         perror("BIND ERROR");
         exit(1);
     }
+    printf("Socket bound to Port %d\n",PORT);
 
 
     y=listen(sock,5);								//listen to a socket with maximum 5 pending connections
@@ -61,8 +75,59 @@ int main()
 	   perror("LISTEN ERROR");
 	   exit(1);
     }
+    printf("Listening........\n");
 	
-    printf("HELLO");
+
+
+	length_client = sizeof(addr_client);
+	client_sock = accept(sock, (struct sockaddr *) &addr_client,&length_client);
+	printf("Connection of client accepted\n");
+	
+	buffer=(char *)malloc((LineBytes+1)*sizeof(char));
+	buffer2=(char *)malloc((LineBytes+1)*sizeof(char));
+	memset(buffer,0,LineBytes);
+	memset(buffer2,0,LineBytes);
+	check = read(client_sock,buffer,LineBytes);
+	if(check==-1)
+	{
+		perror("READ ERROR");
+		exit(1);
+	}
+	printf("\nNew Command = %s\n",buffer);
+	if(buffer[0]=='R')
+	{
+		//for READX k command
+		int k;
+		sscanf(buffer,"READX %d",&k);
+		buffer2=read_file_kth(k);
+		check = write(client_sock,buffer2,LineBytes);
+		if(check==-1)
+		{
+			perror("READ ERROR");
+			exit(1);
+		}
+	}
+	if(buffer[0]=='W')
+	{
+		//for WRITEX msg command
+		sscanf(buffer,"WRITEX %s",buffer2);
+		x=append_file_msg(buffer2);
+		if(x==1)
+		{
+			buffer2="SUCCESS";
+			write(client_sock,buffer2,8);
+		}
+		else
+		{
+			buffer2="FAILURE";
+			write(client_sock,buffer2,8);
+		}
+		
+	}
+	close(client_sock);
+	close(sock);
+
+
 
     
 
