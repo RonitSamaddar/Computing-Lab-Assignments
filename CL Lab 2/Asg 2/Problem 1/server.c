@@ -3,6 +3,7 @@
 #include<stdlib.h>					// malloc()
 #include<string.h>					// strlen()
 #include<math.h>					// pow()
+#include<time.h>					// clock()
 
 
 //MACRO DEFINATIONS
@@ -14,17 +15,33 @@
 char *eval_postfix(char *);			// function to evaluate postfix given in string and return result or error
 
 
-
 //MAIN FUNCTION
 int main()
 {
 	
-	char *str;
+	char *str;								//string input from client
+	clock_t start,end;						//start,end times for client request
+	double duration;						//elapsed times for client request
+
 
 
 	str=(char *)malloc(WORD_LENGTH*sizeof(char));
+
+
+	start=clock();
+	//client request
+	
 	gets(str);
 	printf("%s\n",eval_postfix(str));
+	
+	//end of client request
+	end=clock();
+
+
+	duration=(double)(end - start)/(double)CLOCKS_PER_SEC;
+	printf("Time required = %lf seconds\n",(double)duration);
+
+
 
 }
 
