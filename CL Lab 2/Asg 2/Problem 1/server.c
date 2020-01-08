@@ -37,12 +37,13 @@ char *eval_postfix(char *str)
 	char *ret;						//return value(either result of operation or error message)
 	int i;							//loop variable
 	char c;							//variable to store and process each character
-	float arr[MAX_OPERAND];			//array to store numbers in the postfix
+	double arr[MAX_OPERAND];		//array to store numbers in the postfix
 	int top;						//variable for indexing the array
 	double token;					//getting each token(number) in the postfix expression
 	int nflag;						//flag that the current token is a number
 	int fflag;						//flag that the current number is a floating point number
-	int x;							//power of 10 to divide with		
+	int x;							//power of 10 to divide with
+	double na,nb,nc;				//variable for calculations		
 
 
 
@@ -64,12 +65,13 @@ char *eval_postfix(char *str)
 		if(isalpha(c)!=0)
 		{
 			//letters should not be there;
-			ret="ERROR : ONLY NUMBERS AND OPERATORS ALLOWED";
+			ret="ERROR : ONLY NUMBERS AND OPERATORS(+,-,*,/) ALLOWED";
 			return ret;
 		}
+		//Type 2:Digit
 		else if(isdigit(c)!=0)
 		{
-			nflag=1;
+			nflag=1;//flagging that current token is a number
 			if(fflag==1)
 			{
 				//Already decimal point occured before
@@ -78,18 +80,20 @@ char *eval_postfix(char *str)
 			}
 			else
 			{
+				//decimal point not yet encountered
 				token=token*10+(0+(c-'0'));
 			}
 		}
 		else if(c=='.')
 		{
 			if(((i==0)||(isdigit(str[i-1])==0))&&((i==len-1)||(isdigit(str[i+1])==0)))
-			{//if there is no digit before and also after the '.'
+			{//if there is no digit before and also after the '.', then error
 				ret="ERROR : INCORRECT '.' IN STRING";
 				return ret;
 			}
 			else if(fflag==1)
 			{
+				//if two '.' in a single number than also error
 				ret="ERROR : INCORRECT '.' IN STRING";
 				return ret;
 			}
@@ -102,20 +106,38 @@ char *eval_postfix(char *str)
 		{
 			if(((i>0)&&(str[i-1]!=' '))||((i<len-1)&&(str[i+1]!=' ')))
 			{
-				//if either previous or next character is not a blank
+				//if either previous or next character is not a blank,then error
 				sprintf(ret,"ERROR: ILLEGAL PLACEMENT OF OPERATOR %c",c);
 				return ret;
 			}
 			if(top<=0)
 			{
-				//if two former operands are not there
+				//if two former operands are not there,then error
 				sprintf(ret,"ERROR: NOT ENOUGH OPERANDS FOR %c",c);
 				return ret;
 			}
 			else
 			{
 				//valid operator
-				top=top-2+1;//pop 2 operands,push 1 operand;
+				nb=arr[top--];
+				na=arr[top--];
+				if(c=='+')
+				{
+					nc=na+nb;
+				}
+				else if(c=='-')
+				{
+					nc=na-nb;
+				}
+				else if(c=='*')
+				{
+					nc=na*nb;
+				}
+				else if(c=='/')
+				{
+					nc=na/nb;
+				}
+				arr[++top]=nc;
 			}
 		}
 		else if(c==' ')
@@ -123,8 +145,7 @@ char *eval_postfix(char *str)
 			//processing of token
 			if(nflag==1)
 			{
-				top++;
-				printf("%lf\n",token);
+				arr[++top]=token;
 			}
 			
 
@@ -135,7 +156,7 @@ char *eval_postfix(char *str)
 		}
 		else
 		{
-			ret="ERROR : ONLY NUMBERS AND OPERATORS ALLOWED";
+			ret="ERROR : ONLY NUMBERS AND OPERATORS(+,-,*,/) ALLOWED";
 			return ret;
 		}
 		
@@ -143,8 +164,7 @@ char *eval_postfix(char *str)
 	//processing of token
 	if(nflag==1)
 	{
-		top++;
-		printf("%lf\n",token);
+		arr[++top]=token;
 	}
 
 	if(top>0)
@@ -153,6 +173,6 @@ char *eval_postfix(char *str)
 		return ret;
 	}
 	
-	
-	return "";
+	sprintf(ret,"%lf",arr[0]);
+	return ret;
 }
