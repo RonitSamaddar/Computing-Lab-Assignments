@@ -6,7 +6,8 @@
 #include<netinet/in.h>					//sockaddr_in
 #include<string.h>						//memset()
 #include<unistd.h>						//read(),write(),close()
-#include<math.h>						//pow()	
+#include<math.h>						//pow()
+#include<time.h>						//time(NULL)	
 
 
 
@@ -36,10 +37,12 @@ int main()
 	int client_fd;						//new client fd
 	struct sockaddr_in addr_client; 	//address of client
 	socklen_t length_client; 			//length of client address
-	char *str;							//string for accepting message from client
+	char *str,*buffer;					//string for receiving/sending message from client
+	int cflag;							//flag if there is no space for new client
 
 	srand(time(NULL));
 	str=(char *)malloc(MESSAGE_CAP*sizeof(char));
+	buffer=(char *)malloc(MESSAGE_CAP*sizeof(char));
 
 
 
@@ -126,19 +129,30 @@ int main()
 			//that is there is a incoming connection
 			client_fd=accept(master_sock,(struct sockaddr *) &addr_client,&length_client);
 			int id=rand_int(5);
-			printf("SERVER : Welcome New Client with ID = %d\n",id);
-			fflush(NULL);
+			cflag=1;
 			for(i=0;i<MAX_CLIENTS;i++)
 			{
 				
 				if(client_sock[i]==0)
 				{
 					client_sock[i]=client_fd;
+					sprintf(buffer,"SERVER\t:\tWelcome New Client with ID = %d",id);
+					printf("New Client Connection, ID = %d\n",id);
+					fflush(NULL);
+					write(client_fd,buffer,strlen(buffer));
 					client_number[i]=id;
+					cflag=0;
 					break;
 				}				
 				
 			}
+			if(cflag==1)
+			{
+				sprintf(buffer,"SERVER\t:\tConnection limit exceeded");
+				fflush(NULL);
+				write(client_fd,buffer,strlen(buffer));
+			}
+
 
 
 		}
@@ -149,6 +163,7 @@ int main()
 				if(FD_ISSET(client_sock[i],&readfds))
 				{
 					memset(str,'\0',MESSAGE_CAP);
+					//printf("#READING_CLIENT_MESSAGE\n");
 					check=read(client_sock[i],str,MESSAGE_CAP);
 					if(check==-1)
 					{
@@ -163,7 +178,16 @@ int main()
 						break;
 					}
 					//CLIENT REQUEST
-					
+					//printf("#READ_CLIENT_MESSAGE\n");
+					printf("CLIENT %d\t:\t",client_number[i]);
+					puts(str);
+					sprintf(buffer,"SERVER\t:\t ");
+					fflush(NULL);
+					//printf("#GENERATING_REPLY\n");
+					buffer=strcat(buffer,str);
+
+					write(client_sock[i],buffer,strlen(buffer));
+					//printf("SERVER SEND MESSAGE BACK TO CLIENT");
 
 					//END OF CLIENT REQUEST
 				}

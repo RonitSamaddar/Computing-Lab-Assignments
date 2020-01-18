@@ -68,24 +68,31 @@ int main()
         perror("CONNECT ERROR");
         return -1;
     }
-    printf("Client Connected\n");
+    read(sock,buffer,WORD_CAP);
+    puts(buffer);
+    if(strcmp(buffer,"SERVER\t:\tConnection limit exceeded")==0)
+    {
+        exit(1);
+    }
     //puts(buffer);
-
     while(1)
     {  
-        //Inputing Message to send
-        printf("Enter Message To Server (\"EXIT\" to stop) :\n");    
+        //Inputing Message to send 
+        //printf("#WAITING_FOR_USER_MESSAGE\n");
         gets(buffer);
-
+        //printf("#GOT_MESSAGE\n");
         //Sending message to server
         write(sock,buffer,strlen(buffer));
+        //printf("#SENT_MESSAGE\n");
         if(strcmp(buffer,"EXIT")==0)
         {
             break;
         }
         memset(buffer,'\0',WORD_CAP);
+        //printf("#READING_SERVER_MESSAGE\n");
         read(sock,buffer,WORD_CAP);
-        printf("Server replied : %s\n",buffer);
+        //printf("#READ_SERVER_MESSAGE\n");
+        puts(buffer);
     }
 
 
