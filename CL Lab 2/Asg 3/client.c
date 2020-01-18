@@ -75,25 +75,42 @@ int main()
         exit(1);
     }
     //puts(buffer);
-    while(1)
-    {  
-        //Inputing Message to send 
-        //printf("#WAITING_FOR_USER_MESSAGE\n");
-        gets(buffer);
-        //printf("#GOT_MESSAGE\n");
-        //Sending message to server
-        write(sock,buffer,strlen(buffer));
-        //printf("#SENT_MESSAGE\n");
-        if(strcmp(buffer,"EXIT")==0)
-        {
-            break;
+    check=fork();
+    if(check==0)
+    {
+        //SENDING
+
+        while(1)
+        {  
+            //Inputing Message to send 
+            //printf("#WAITING_FOR_USER_MESSAGE\n");
+            gets(buffer);
+            //printf("#GOT_MESSAGE\n");
+            //Sending message to server
+            write(sock,buffer,strlen(buffer));
+            //printf("#SENT_MESSAGE\n");
         }
-        memset(buffer,'\0',WORD_CAP);
-        //printf("#READING_SERVER_MESSAGE\n");
-        read(sock,buffer,WORD_CAP);
-        //printf("#READ_SERVER_MESSAGE\n");
-        puts(buffer);
+
     }
+    else
+    {
+        //RECEIVING
+
+        while(1)
+        {
+            memset(buffer,'\0',WORD_CAP);
+            //printf("#READING_SERVER_MESSAGE\n");
+            read(sock,buffer,WORD_CAP);
+            //printf("#READ_SERVER_MESSAGE\n");
+            
+            if(strcmp(buffer,"/quit")==0)
+            {
+                break;
+            }
+            puts(buffer);
+        }
+    }
+    
 
 
     //Closing socket
