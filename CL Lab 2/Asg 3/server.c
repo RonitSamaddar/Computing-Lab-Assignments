@@ -7,17 +7,33 @@
 #include<string.h>						//memset()
 #include<unistd.h>						//read(),write(),close()
 #include<math.h>						//pow()
-#include<time.h>						//time(NULL)	
+#include<time.h>						//time(NULL)
+#include<ctype.h>						//isdigit()	
 
 
 
 //MACRO DEFINATIONS
 #define PORT 6000
 #define MAX_CLIENTS 5
-#define MESSAGE_CAP 256
+#define BUFFER_CAP 256
+#define	MESSAGE_CAP 200
 
 //FUNCTION PROTOTYPES
 int rand_int(int d);						//gives a random integer of d digits
+int validate(char *str,int mode);			//error checks the format of different client commands
+
+//STRUCTURES
+struct Client
+{
+	int sockfd;
+	int id;
+};
+struct Message
+{
+	int sourceid;
+	int destid;
+	char *message;
+};
 
 
 int main()
@@ -29,28 +45,31 @@ int main()
 	int check;							//error check variable
 	struct sockaddr_in address;			//structure for socket address details
 	int addrlen;						//variable for storing structure size
-	int client_sock[MAX_CLIENTS];		//socket of client
-	int client_number[MAX_CLIENTS];		//each client number/id;
-	int i;								//loop variable
+	struct Client clients[MAX_CLIENTS];	//array of client records
+	struct Message messages[MESSAGE_CAP];//array of message records
+	int i,j;							//loop variable
 	fd_set readfds;						//set of file descriptors to read
 	int max_fd;							//maximum fd for select()
 	int client_fd;						//new client fd
 	struct sockaddr_in addr_client; 	//address of client
 	socklen_t length_client; 			//length of client address
-	char *str,*buffer;					//string for receiving/sending message from client
+	char *str,*buffer,*buffer2;			//string for receiving/sending message from client
 	int cflag;							//flag if there is no space for new client
+	int cid,cfd;						// variables for storing a client id and socket fd
+	int flag;							// flag for other flag purposes
 
 	srand(time(NULL));
-	str=(char *)malloc(MESSAGE_CAP*sizeof(char));
-	buffer=(char *)malloc(MESSAGE_CAP*sizeof(char));
+	str=(char *)malloc(BUFFER_CAP*sizeof(char));
+	buffer=(char *)malloc(BUFFER_CAP*sizeof(char));
+	buffer2=(char *)malloc(BUFFER_CAP*sizeof(char));
 
 
 
 	//setting all client sockets to 0 initially
     for(i=0;i<MAX_CLIENTS;i++)
     {
-    	client_sock[i]=0;
-    	client_number[i]=0;
+    	clients[i].sockfd=0;
+    	clients[i].id=-1;
     }
 
 	//Establishing socket
@@ -107,17 +126,19 @@ int main()
 		max_fd=master_sock;
 		for(i=0;i<MAX_CLIENTS;i++)
 		{
-			if(client_sock[i]>0)		//adding all valid client sockets to fd set
+			if(clients[i].sockfd>0)		//adding all valid client sockets to fd set
 			{
-				FD_SET(client_sock[i],&readfds);
-				if(client_sock[i]>max_fd)
+				FD_SET(clients[i].sockfd,&readfds);
+				if(clients[i].sockfd>max_fd)
 				{
-					max_fd=client_sock[i];
+					max_fd=clients[i].sockfd;
 				}
 			}
 		}
 
+		//printf("ABOUT TO SELECT\n");
 		check=select(max_fd+1,&readfds,NULL,NULL,NULL);
+
 		if(check==-1)
 		{
 			perror("SELECT ERROR :");
@@ -125,22 +146,23 @@ int main()
 		}
 		if(FD_ISSET(master_sock,&readfds))
 		{
+			//printf("MASTER SOCKET ACTIVITY\n");
 			//the activity is in the master socket
 			//that is there is a incoming connection
 			client_fd=accept(master_sock,(struct sockaddr *) &addr_client,&length_client);
-			int id=rand_int(5);
+			cid=rand_int(5);
 			cflag=1;
 			for(i=0;i<MAX_CLIENTS;i++)
 			{
 				
-				if(client_sock[i]==0)
+				if(clients[i].sockfd==0)
 				{
-					client_sock[i]=client_fd;
-					sprintf(buffer,"SERVER\t:\tWelcome New Client with ID = %d",id);
-					printf("New Client Connection, ID = %d\n",id);
+					clients[i].sockfd=client_fd;
+					sprintf(buffer,"SERVER\t:\tWelcome New Client with ID = %d",cid);
+					printf("New Client Connection, ID = %d\n",cid);
 					fflush(NULL);
-					write(client_fd,buffer,strlen(buffer));
-					client_number[i]=id;
+					send(client_fd,buffer,strlen(buffer),0);
+					clients[i].id=cid;
 					cflag=0;
 					break;
 				}				
@@ -150,7 +172,7 @@ int main()
 			{
 				sprintf(buffer,"SERVER\t:\tConnection limit exceeded");
 				fflush(NULL);
-				write(client_fd,buffer,strlen(buffer));
+				send(client_fd,buffer,strlen(buffer),0);
 			}
 
 
@@ -158,38 +180,100 @@ int main()
 		}
 		else
 		{
+			//printf("CLIENT SOCKET ACTIVITY\n");
 			for(i=0;i<MAX_CLIENTS;i++)
 			{
-				if(FD_ISSET(client_sock[i],&readfds))
+				if(FD_ISSET(clients[i].sockfd,&readfds))
 				{
-					memset(str,'\0',MESSAGE_CAP);
+					//printf("CLIENT %d ACTIVITY\n",clients[i].id);
+					memset(str,'\0',BUFFER_CAP);
 					//printf("#READING_CLIENT_MESSAGE\n");
-					check=read(client_sock[i],str,MESSAGE_CAP);
+					check=recv(clients[i].sockfd,str,BUFFER_CAP,0);
 					if(check==-1)
 					{
 						perror("READ ERROR");
 						exit(1);
 					}
-					if(strcmp(str,"EXIT")==0)
+					printf("CLIENT %d\t:\t",clients[i].id);
+					puts(str);
+					if(strcmp(str,"/quit")==0)
 					{
 						//printf("Client socket number %d exits\n",client_number[i]);
-						close(client_sock[i]);
-						client_sock[i]=0;
+						//BROADCAST TO ALL OTHER CLIENTS
+						for(j=0;j<MAX_CLIENTS;j++)
+						{
+							if(clients[j].sockfd>0 &&j!=i)
+							{
+								sprintf(buffer,"SERVER\t:\t Client %d has left the chat",clients[i].id);
+								send(clients[j].sockfd,buffer,strlen(buffer),0);
+							}
+						}
+						sprintf(buffer,"/quit");
+						send(clients[i].sockfd,buffer,strlen(buffer),0);
+						close(clients[i].sockfd);
+						clients[i].sockfd=0;
+						clients[i].id=-1;
+
 						break;
 					}
+					else if(strcmp(str,"/active")==0)	
+					{
+						sprintf(buffer,"SERVER\t:\t Online Clients :\n");
+						for(j=0;j<MAX_CLIENTS;j++)
+						{
+							if(clients[j].sockfd>0)
+							{
+								if(j!=i)
+									sprintf(buffer2,"%d\n",clients[j].id);
+								else
+									sprintf(buffer2,"%d : THIS IS YOU\n",clients[j].id);
+								buffer=strcat(buffer,buffer2);
+							}
+						}
+						send(clients[i].sockfd,buffer,strlen(buffer),0);
+					}
+					else if(strncmp(str,"/send",5)==0)
+					{
+						printf("send command\n");
+						check=validate(str,1);
+						flag=0;
+						if(check==1)
+						{
+							sscanf(str,"/send %5d %s",&cid,buffer2);
+							buffer2=str+12;
+							//printf("/send\n");
+							//printf("%5d\n%s\n",cid,buffer2);
+							for(j=0;j<MAX_CLIENTS;j++)
+							{
+								if(clients[j].id==cid)
+								{
+									flag=1;
+									sprintf(buffer,"CLIENT %d\t:\t",clients[i].id);
+									buffer=strcat(buffer,buffer2);
+									send(clients[j].sockfd,buffer,strlen(buffer),0);
+								}
+							}
+							if(flag==0)
+							{
+								sprintf(buffer,"SERVER\t:\t: No Such Client");
+								send(clients[i].sockfd,buffer,strlen(buffer),0);
+							}
+
+						}
+						if(check==0)
+						{
+							sprintf(buffer,"SERVER\t:\t Incorrect Format");
+							send(clients[i].sockfd,buffer,strlen(buffer),0);
+						}
+						
+					}
+
 					//CLIENT REQUEST
 					//printf("#READ_CLIENT_MESSAGE\n");
-					printf("CLIENT %d\t:\t",client_number[i]);
-					puts(str);
-					sprintf(buffer,"SERVER\t:\t ");
-					fflush(NULL);
-					//printf("#GENERATING_REPLY\n");
-					buffer=strcat(buffer,str);
-
-					write(client_sock[i],buffer,strlen(buffer));
 					//printf("SERVER SEND MESSAGE BACK TO CLIENT");
 
 					//END OF CLIENT REQUEST
+					break;
 				}
 			}
 		}
@@ -227,4 +311,31 @@ int rand_int(int d)
 	}
 	return r;
 
+}
+
+int validate(char *str,int mode)
+{
+	int i;								//Loop variable
+
+	switch(mode)
+	{
+		case 1:
+			// /send command
+			//FORMAT =
+			//			/send dest_id message
+			//printf("DIGITS TO BE CHECKED\n");
+			for(i=6;i<11;i++)
+			{
+				if(isdigit(str[i])==0)
+				{
+					return 0;
+				}
+
+			}
+			//printf("DIGITS CHECKED\n");
+			if(str[5]!=' '||str[11]!=' ')
+				return 0;
+			//printf("BLANKS CHECKED\n");
+			return 1;
+	}
 }
