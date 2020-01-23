@@ -1,19 +1,34 @@
 //Header file inclusion
-#include<sys/types.h>					//socket(),setsockopt(),bind(),listen()
+#include<sys/types.h>					//socket(),setsockopt(),bind(),listen(),ftok()
 #include<sys/socket.h>					//socket(),setsockopt(),bind(),listen()
 #include<netinet/in.h>					//sockaddr_in
 #include<string.h>						//memset()
 #include<stdlib.h>						//exit()
 #include<stdio.h>						//printf(),perror()
 #include<unistd.h>						//fork(),read(),write(),close()
+#include<sys/ipc.h>						//ftok(),shmget()
+#include<sys/shm.h>						//shmget()
+#include<math.h>						//pow()
+#include<ctype.h>						//isdigit()
 
 
 //MACRO defination
 #define PORT 6000
 #define MESSAGE_LENGTH 256
+#define MAX_CLIENTS 5
 
+struct Client
+{
+	int fd;
+	int id;
+};
 
 //Function prototypes
+int rand_int(int d);						//gives a random integer of d digits
+int validate(char *str,int mode);			//error checks the format of different client commands
+int sigintHandler(int sig_num);				//signal handler for Ctrl+C
+int printArray(struct Client *arr,int n);	//debug print function for client array
+
 
 
 
@@ -26,18 +41,78 @@ int main()
 	int check;							//error check variable
 	struct sockaddr_in address;			//socket details address structure
 	int addrlen;						//Length of above address structure
-	int client_index;					//client index
-	int client_sock;					//client socket id
 	struct sockaddr_in addr_client;		//socket details address structure for client
-	socklen_t length_client;					//Length of above address structure for client
+	socklen_t length_client;			//Length of above address structure for client
 	pid_t x;							//fork process id
-	char *str,*buffer,*buffer2;			//char array for exchanging messages with client		
+	char *str,*buffer,*buffer2;			//char array for exchanging messages with client
+	size_t mem_count_cl1,mem_count_cl2;	//size of shared memory
+	int shmid_cl1,shmid_cl2;			//id of the shared memory
+	int *shmad_cl1;						//shared memory address
+	struct Client *shmad_cl2;			//shared memory address
+	int i,j,k,l;						//loop variable
+	int flag;							//variable for flagging 
+	int cid,cfd;						//process's client id,client socket fd
+	int temp_cid,temp_cfd;				//client id,client socket fd
 
 
-	client_index=0;
 	str=(char *)malloc(MESSAGE_LENGTH*sizeof(char));
 	buffer=(char *)malloc(MESSAGE_LENGTH*sizeof(char));
 	buffer2=(char *)malloc(MESSAGE_LENGTH*sizeof(char));
+
+	//Creating Client socket,id array shared memory
+	// format of data in memory
+	//			num_clients,client_fd_1,client_id_1,client_fd_2,client_id_2,...................
+	// size of shared memory required = 1 + MAX_CLIENTS * 2
+	
+
+	/*tok1=ftok("A4.pdf",2);
+	if(tok1==-1)
+	{
+		perror("ftok() ERROR : ");
+		exit(1);
+	}
+	*/
+	mem_count_cl1=1;
+	mem_count_cl2=MAX_CLIENTS;
+	shmid_cl1 =shmget(IPC_PRIVATE,mem_count_cl1*sizeof(int),0777|IPC_CREAT|IPC_EXCL);
+	if(shmid_cl1==-1)
+	{
+		perror("shmget() ERROR : ");
+		exit(1);
+	}
+	shmid_cl2 =shmget(IPC_PRIVATE,mem_count_cl2*sizeof(struct Client),0777|IPC_CREAT|IPC_EXCL);
+	if(shmid_cl2==-1)
+	{
+		perror("shmget() ERROR : ");
+		exit(1);
+	}
+	shmad_cl1 =(int *)shmat(shmid_cl1,NULL,0);
+	if(shmad_cl1==(int *)(-1))
+	{
+		perror("shmat() ERROR : ");
+		shmctl(shmid_cl1,IPC_RMID,NULL);
+		exit(1);
+	}
+	shmad_cl2 =(struct Client *)shmat(shmid_cl2,NULL,0);
+	if(shmad_cl2==(int *)(-1))
+	{
+		perror("shmat() ERROR : ");
+		shmctl(shmid_cl2,IPC_RMID,NULL);
+		exit(1);
+	}
+
+
+	//Initializing client array
+	*(shmad_cl1)=0;//number of clients
+	for(i=0;i<MAX_CLIENTS;i++)
+	{
+		printf("Initializing index %d\n",i);
+		(*(shmad_cl2+i)).fd=0;
+		(*(shmad_cl2+i)).id=-1;
+	}
+	//printArray(shmad_cl2,mem_count_cl2);
+	
+
 
 
 
@@ -85,16 +160,18 @@ int main()
 	   exit(1);
     }
     printf("Listening........\n");
+    
 
-
+    
     while(1)
 	{
-		client_sock = accept(master_sock, (struct sockaddr *) &addr_client,&length_client);
-		if(client_sock==-1)
+		cfd = accept(master_sock, (struct sockaddr *) &addr_client,&length_client);
+		if(cfd==-1)
 		{
 			perror("accept() ERROR : ");
 	   		exit(1);
 		}
+		//printf("New connection accepted. Creating new process...........\n");
 		int x=fork();
 		if(x==0)
 		{
@@ -104,38 +181,260 @@ int main()
 		}
 		else
 		{
-			client_index++;
+			*(shmad_cl1)=*(shmad_cl1)+1;
+			//printArray(shmad_cl2,mem_count_cl2);
 		}
 	}
-	sprintf(buffer,"SERVER\t\t\t\t:\tWelcome New Client with ID = %d",client_index);
-	printf("New Client Connection, ID = %d\n",client_index);
-	fflush(NULL);
-	send(client_sock,buffer,strlen(buffer),0);
+	printf("CLIENT HANDLING\n");
+	//NEW CLIENT HANDLING
+	flag=1;
 	while(1)
 	{
+		cid=rand_int(5);
+		for(j=0;j<MAX_CLIENTS;j++)
+		{
+			if((*(shmad_cl2+j)).id==cid)
+			{
+				flag=0;
+			}
+		}
+		if(flag==1)
+		{
+			break;
+		}
+		else
+		{
+			flag=1;
+		}
+	}
+	
+	flag=1;
+	//printArray(shmad_cl2,mem_count_cl2);
+	//printf("HELOOOOOOO\n");
+	
+	
+	for(i=0;i<MAX_CLIENTS;i++)
+	{
+		if((*(shmad_cl2+i)).fd==0)
+		{
+			(*(shmad_cl2+i)).fd=cfd;
+			sprintf(buffer,"SERVER\t\t\t\t:\tWelcome New Client with ID = %d",cid);
+			printf("New Client Connection, ID = %d\n",cid);
+			//printArray(shmad1,mem_count1);
+			fflush(NULL);
+			send(cfd,buffer,strlen(buffer),0);
+			(*(shmad_cl2+i)).id=cid;
+			flag=0;
+			break;
+		}			
+	}
+	if(flag==1)
+	{
+		sprintf(buffer,"SERVER\t\t\t\t:\tConnection limit exceeded");
+		fflush(NULL);
+		send(cfd,buffer,strlen(buffer),0);
+	}
+	while(1)
+	{
+		//ALL FURTHER QUERIES FROM CLIENT
 		memset(str,'\0',MESSAGE_LENGTH);
-		check=read(client_sock,str,MESSAGE_LENGTH);
+		check=read(cfd,str,MESSAGE_LENGTH);
+		printf("Client %d\t\t\t:\t%s\n",cid,str);
 		if(check==-1)
 		{
 			perror("READ ERROR");
 			exit(1);
 		}
-		if(strcmp(str,"/quit")==0)
+		if(strncmp(str,"/active",7)==0)	
 		{
-			printf("Client socket number %d exits\n",client_index);
+			//printf("##INSIDE /active\n");
+			sprintf(buffer,"SERVER\t\t\t\t:\tOnline Clients :\n");
+			for(j=0;j<MAX_CLIENTS;j++)
+			{
+				if((*(shmad_cl2+j)).fd>0)
+				{
+					if(j!=i)
+						sprintf(buffer2,"%d\n",(*(shmad_cl2+j)).id);
+					else
+						sprintf(buffer2,"%d : THIS IS YOU\n",(*(shmad_cl2+j)).id);
+					buffer=strcat(buffer,buffer2);
+				}
+			}
+			send(cfd,buffer,strlen(buffer),0);
+		}
+		else if(strncmp(str,"/quit",5)==0)
+		{
+			send(cfd,str,strlen(str),0);
+			printf("Client %d exits\n",cid);
+			for(j=0;j<MAX_CLIENTS;j++)
+			{
+				if((*(shmad_cl2+j)).fd>0 &&j!=i)
+				{
+					sprintf(buffer,"SERVER\t\t\t\t:\tClient %d has left the chat",cid);
+					fflush(NULL);
+					send((*(shmad_cl2+j)).fd,buffer,strlen(buffer),0);
+					fflush(NULL);
+				}
+			}
 			break;
 		}
 		//CLIENT REQUEST	
-		printf("Client %d\t\t\t:\t%s\n",client_index,str);
 		//END OF CLIENT REQUEST
 	}
-	close(client_sock);
+	shmdt(shmad_cl1);
+    shmdt(shmad_cl1);
+	close(cfd);
+}
+
+//shmctl(shmid_cl1,IPC_RMID,0);
+//shmctl(shmid_cl1,IPC_RMID,0);
 
 
 
 
+int rand_int(int d)
+{
+	int ll,ul;							//lower,upper limit of range
+	int r;								//random number generated
+
+	ll=pow(10,d-1);
+	ul=pow(10,d);
+	r=ul;
+	
+	while(r==ul)
+	{
+		r=(int)(rand()*1.0*(ul-ll)/RAND_MAX+(float)ll);
+	}
+	return r;
+
+}
+
+int validate(char *str,int mode)
+{
+	int i;								//Loop variable
+	int count;							//count variable%6
+
+	switch(mode)
+	{
+		case 1:
+			// /send command
+			//FORMAT =
+			//			/send dest_id message
+			//printf("DIGITS TO BE CHECKED\n");
+			for(i=6;i<11;i++)
+			{
+				if(isdigit(str[i])==0)
+				{
+					return 0;
+				}
+
+			}
+			//printf("DIGITS CHECKED\n");
+			if(str[5]!=' '||str[11]!=' ')
+				return 0;
+			//printf("BLANKS CHECKED\n");
+			return 1;
+			break;
+		case 2:
+			// /makegroup command
+			//FORMAT =
+			//			/makegroup <client_id1>,<client_id2>,.....
+			count=0;
+			for(i=11;i<strlen(str);i++)
+			{
+				count=(count+1)%6;
+				//as all client ids must be 5 digit integers, count will increase from 1
+				// to 5 across an id and then again become 0 on space
+				if((count>0 && isdigit(str[i])==0)||(count==0 && str[i]!=' ' && str[i]!=','))
+				{
+					return 0;
+				}
+			}
+			return 1;
+			break;
+		case 3:
+			// /makegroupreq command
+			//FORMAT =
+			//			/makegroupreq <client_id1>,<client_id2>,.....
+			count=0;
+			for(i=14;i<strlen(str);i++)
+			{
+				count=(count+1)%6;
+				//as all client ids must be 5 digit integers, count will increase from 1
+				// to 5 across an id and then again become 0 on space
+				if((count>0 && isdigit(str[i])==0)||(count==0 && str[i]!=' ' && str[i]!=','))
+				{
+					return 0;
+				}
+			}
+			return 1;
+			break;
+		case 4:
+			// /joingroup command
+			//FORMAT =
+			//			/joingroup <group_id>
+			if(strlen(str)!=14)
+			{
+				return 0;
+			}
+			for(i=11;i<14;i++)
+			{
+				if(isdigit(str[i])==0)
+				{
+					return 0;
+				}
+			}
+			return 1;
+			break;
+		case 5:
+		// /sendgroup command
+		//FORMAT = 
+		//				/sendgroup <group_id> message
+		if(str[14]!=' ')
+		{
+			//printf("INCORRECT SPACE\n");
+			return 0;
+		}
+		for(i=11;i<14;i++)
+		{
+
+			if(isdigit(str[i])==0)
+			{
+				//printf("INCORRECT CHAR AT POSITION %d\n",i);
+				return 0;
+			}
+		}
+		return 1;
+		break;
+	case 6:
+			// /declinegroup command
+			//FORMAT =
+			//			/declinegroup <group_id>
+			if(strlen(str)!=17)
+			{
+				return 0;
+			}
+			for(i=14;i<17;i++)
+			{
+				if(isdigit(str[i])==0)
+				{
+					return 0;
+				}
+			}
+			return 1;
+			break;
+
+	}
+}
 
 
-
-
+int printArray(struct Client *arr,int n)
+{
+	printf("ARRAY = \n");
+	for(int i=0;i<n;i++)
+	{
+		struct Client c=arr[i];
+		printf("%d %d ",c.fd,c.id);
+	}
+	printf("\n");
 }

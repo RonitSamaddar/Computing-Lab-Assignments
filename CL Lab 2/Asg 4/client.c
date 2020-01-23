@@ -62,12 +62,16 @@ int main()
    
 
     //Connecting to the server
+    printf("HELLO1\n");
     check=connect(sock, (struct sockaddr *)&address, sizeof(address));
+    printf("HELLO2\n");
     if(check< 0)
     {
         perror("CONNECT ERROR");
         return -1;
     }
+    printf("Connected to server\n");
+    fflush(NULL);
     recv(sock,buffer,WORD_CAP,0);
     puts(buffer);
     if(strcmp(buffer,"SERVER\t:\tConnection limit exceeded")==0)
@@ -102,7 +106,6 @@ int main()
             //printf("#READING_SERVER_MESSAGE\n");
             recv(sock,buffer,WORD_CAP,0);
             //printf("#READ_SERVER_MESSAGE\n");
-            
             if(strcmp(buffer,"/quit")==0)
             {
                 break;
