@@ -92,6 +92,7 @@ int main()
             //printf("#GOT_MESSAGE\n");
             //Sending message to server
             send(sock,buffer,strlen(buffer),0);
+            printf("MESSAGE SENT\n");
             //printf("#SENT_MESSAGE\n");
         }
 
@@ -105,12 +106,14 @@ int main()
             memset(buffer,'\0',WORD_CAP);
             //printf("#READING_SERVER_MESSAGE\n");
             recv(sock,buffer,WORD_CAP,0);
+            printf("MESSAGE RECEIVED\n");
             //printf("#READ_SERVER_MESSAGE\n");
             if(strcmp(buffer,"/quit")==0)
             {
                 break;
             }
             puts(buffer);
+            fflush(NULL);
         }
     }
     

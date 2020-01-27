@@ -22,6 +22,12 @@ struct Client
 	int fd;
 	int id;
 };
+struct Message
+{
+	int source_id;
+	int dest_id;
+	char *msg;
+};
 
 //Function prototypes
 int rand_int(int d);						//gives a random integer of d digits
@@ -45,16 +51,16 @@ int main()
 	socklen_t length_client;			//Length of above address structure for client
 	pid_t x;							//fork process id
 	char *str,*buffer,*buffer2;			//char array for exchanging messages with client
-	size_t mem_count_cl1,mem_count_cl2;	//size of shared memory
-	int shmid_cl1,shmid_cl2;			//id of the shared memory
-	int *shmad_cl1;						//shared memory address
-	struct Client *shmad_cl2;			//shared memory address
+	size_t mem_count_cl;				//size of shared memory
+	int shmid_cl;						//id of the shared memory
+	struct Client *shmad_cl;			//shared memory address
 	int i,j,k,l;						//loop variable
 	int flag;							//variable for flagging 
 	int cid,cfd;						//process's client id,client socket fd
 	int temp_cid,temp_cfd;				//client id,client socket fd
 
 
+	srand(getpid());
 	str=(char *)malloc(MESSAGE_LENGTH*sizeof(char));
 	buffer=(char *)malloc(MESSAGE_LENGTH*sizeof(char));
 	buffer2=(char *)malloc(MESSAGE_LENGTH*sizeof(char));
@@ -72,45 +78,31 @@ int main()
 		exit(1);
 	}
 	*/
-	mem_count_cl1=1;
-	mem_count_cl2=MAX_CLIENTS;
-	shmid_cl1 =shmget(IPC_PRIVATE,mem_count_cl1*sizeof(int),0777|IPC_CREAT|IPC_EXCL);
-	if(shmid_cl1==-1)
+
+	mem_count_cl=MAX_CLIENTS;
+	shmid_cl =shmget(IPC_PRIVATE,mem_count_cl*sizeof(struct Client),0777|IPC_CREAT|IPC_EXCL);
+	if(shmid_cl==-1)
 	{
 		perror("shmget() ERROR : ");
 		exit(1);
 	}
-	shmid_cl2 =shmget(IPC_PRIVATE,mem_count_cl2*sizeof(struct Client),0777|IPC_CREAT|IPC_EXCL);
-	if(shmid_cl2==-1)
-	{
-		perror("shmget() ERROR : ");
-		exit(1);
-	}
-	shmad_cl1 =(int *)shmat(shmid_cl1,NULL,0);
-	if(shmad_cl1==(int *)(-1))
+	shmad_cl =(struct Client *)shmat(shmid_cl,NULL,0);
+	if(shmad_cl==(struct Client *)(-1))
 	{
 		perror("shmat() ERROR : ");
-		shmctl(shmid_cl1,IPC_RMID,NULL);
-		exit(1);
-	}
-	shmad_cl2 =(struct Client *)shmat(shmid_cl2,NULL,0);
-	if(shmad_cl2==(int *)(-1))
-	{
-		perror("shmat() ERROR : ");
-		shmctl(shmid_cl2,IPC_RMID,NULL);
+		shmctl(shmid_cl,IPC_RMID,NULL);
 		exit(1);
 	}
 
 
 	//Initializing client array
-	*(shmad_cl1)=0;//number of clients
 	for(i=0;i<MAX_CLIENTS;i++)
 	{
 		printf("Initializing index %d\n",i);
-		(*(shmad_cl2+i)).fd=0;
-		(*(shmad_cl2+i)).id=-1;
+		(*(shmad_cl+i)).fd=0;
+		(*(shmad_cl+i)).id=-1;
 	}
-	//printArray(shmad_cl2,mem_count_cl2);
+	//printArray(shmad_cl,mem_count_cl);
 	
 
 
@@ -179,11 +171,6 @@ int main()
 			//Corresponds to new process handling the new client
 			break;
 		}
-		else
-		{
-			*(shmad_cl1)=*(shmad_cl1)+1;
-			//printArray(shmad_cl2,mem_count_cl2);
-		}
 	}
 	printf("CLIENT HANDLING\n");
 	//NEW CLIENT HANDLING
@@ -193,7 +180,7 @@ int main()
 		cid=rand_int(5);
 		for(j=0;j<MAX_CLIENTS;j++)
 		{
-			if((*(shmad_cl2+j)).id==cid)
+			if((*(shmad_cl+j)).id==cid)
 			{
 				flag=0;
 			}
@@ -209,21 +196,27 @@ int main()
 	}
 	
 	flag=1;
-	//printArray(shmad_cl2,mem_count_cl2);
+	//printArray(shmad_cl,mem_count_cl);
 	//printf("HELOOOOOOO\n");
 	
 	
 	for(i=0;i<MAX_CLIENTS;i++)
 	{
-		if((*(shmad_cl2+i)).fd==0)
+		if((*(shmad_cl+i)).fd==0)
 		{
-			(*(shmad_cl2+i)).fd=cfd;
+			(*(shmad_cl+i)).fd=cfd;
 			sprintf(buffer,"SERVER\t\t\t\t:\tWelcome New Client with ID = %d",cid);
 			printf("New Client Connection, ID = %d\n",cid);
 			//printArray(shmad1,mem_count1);
 			fflush(NULL);
-			send(cfd,buffer,strlen(buffer),0);
-			(*(shmad_cl2+i)).id=cid;
+			check=send(cfd,buffer,strlen(buffer),0);
+			if(check==-1)
+			{
+				perror("send() ERROR : ");
+				exit(1);
+			}
+
+			(*(shmad_cl+i)).id=cid;
 			flag=0;
 			break;
 		}			
@@ -233,7 +226,13 @@ int main()
 		sprintf(buffer,"SERVER\t\t\t\t:\tConnection limit exceeded");
 		fflush(NULL);
 		send(cfd,buffer,strlen(buffer),0);
+		if(check==-1)
+		{
+			perror("send() ERROR : ");
+			exit(1);
+		}
 	}
+	printArray(shmad_cl,mem_count_cl);
 	while(1)
 	{
 		//ALL FURTHER QUERIES FROM CLIENT
@@ -242,7 +241,7 @@ int main()
 		printf("Client %d\t\t\t:\t%s\n",cid,str);
 		if(check==-1)
 		{
-			perror("READ ERROR");
+			perror("read() ERROR : ");
 			exit(1);
 		}
 		if(strncmp(str,"/active",7)==0)	
@@ -251,43 +250,105 @@ int main()
 			sprintf(buffer,"SERVER\t\t\t\t:\tOnline Clients :\n");
 			for(j=0;j<MAX_CLIENTS;j++)
 			{
-				if((*(shmad_cl2+j)).fd>0)
+				if((*(shmad_cl+j)).fd>0)
 				{
 					if(j!=i)
-						sprintf(buffer2,"%d\n",(*(shmad_cl2+j)).id);
+						sprintf(buffer2,"%d\n",(*(shmad_cl+j)).id);
 					else
-						sprintf(buffer2,"%d : THIS IS YOU\n",(*(shmad_cl2+j)).id);
+						sprintf(buffer2,"%d : THIS IS YOU\n",(*(shmad_cl+j)).id);
 					buffer=strcat(buffer,buffer2);
 				}
 			}
-			send(cfd,buffer,strlen(buffer),0);
+			check=send(cfd,buffer,strlen(buffer),0);
+			if(check==-1)
+			{
+				perror("send() ERROR : ");
+				exit(1);
+			}
 		}
 		else if(strncmp(str,"/quit",5)==0)
 		{
-			send(cfd,str,strlen(str),0);
+			check=send(cfd,str,strlen(str),0);
+			if(check==-1)
+			{
+				perror("send() ERROR : ");
+				exit(1);
+			}
 			printf("Client %d exits\n",cid);
 			for(j=0;j<MAX_CLIENTS;j++)
 			{
-				if((*(shmad_cl2+j)).fd>0 &&j!=i)
+				if((*(shmad_cl+j)).fd>0 &&j!=i)
 				{
 					sprintf(buffer,"SERVER\t\t\t\t:\tClient %d has left the chat",cid);
 					fflush(NULL);
-					send((*(shmad_cl2+j)).fd,buffer,strlen(buffer),0);
+					check=send((*(shmad_cl+j)).fd,buffer,strlen(buffer),0);
+					if(check==-1)
+					{
+						perror("send() ERROR : ");
+						exit(1);
+					}
 					fflush(NULL);
 				}
 			}
 			break;
 		}
+		else if(strncmp(str,"/send ",6)==0)
+		{
+			check=validate(str,1);
+			flag=0;
+			if(check==1)
+			{
+				sscanf(str,"/send %5d %s",&temp_cid,buffer);
+				buffer2=str+12;
+				//printf("/send\n");
+				//printf("%5d\n%s\n",cid,buffer2);
+				for(j=0;j<MAX_CLIENTS;j++)
+				{
+					if((*(shmad_cl+j)).id==temp_cid)
+					{
+						flag=1;
+						sprintf(buffer,"CLIENT %d\t\t\t:\t",cid);
+						fflush(NULL);
+						buffer=strcat(buffer,buffer2);
+						check=send((*(shmad_cl+j)).fd,buffer,strlen(buffer),0);
+						if(check==-1)
+						{
+							perror("send() ERROR : ");
+							exit(1);
+						}
+						fflush(NULL);
+					}
+				}
+				if(flag==0)
+				{
+					sprintf(buffer,"SERVER\t\t\t\t:\tNo Such Client");
+					check=send(cfd,buffer,strlen(buffer),0);
+					if(check==-1)
+					{
+						perror("send() ERROR : ");
+						exit(1);
+					}
+				}
+
+			}
+			if(check==0)
+			{
+				sprintf(buffer,"SERVER\t\t\t\t:\tIncorrect Format");
+				check=send(cfd,buffer,strlen(buffer),0);
+				if(check==-1)
+				{
+					perror("send() ERROR : ");
+					exit(1);
+				}
+			}
+			
+		}
 		//CLIENT REQUEST	
 		//END OF CLIENT REQUEST
 	}
-	shmdt(shmad_cl1);
-    shmdt(shmad_cl1);
+    shmdt(shmad_cl);
 	close(cfd);
 }
-
-//shmctl(shmid_cl1,IPC_RMID,0);
-//shmctl(shmid_cl1,IPC_RMID,0);
 
 
 
