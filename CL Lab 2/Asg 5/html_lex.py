@@ -125,13 +125,94 @@ def p_error(p):
 
 
 parser = yacc.yacc()
+def strip_symbols(old_str):
+	new_str=""
+	allowed="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _"
+	for c in old_str:
+		if c in allowed:
+			new_str=new_str+c
+	return new_str
+def paper_filter(work_list,to_find):
+	match_list=[]
+	for element in work_list:
+		if(element[0]=="" or element[1]=="" or element[2]==""):
+			continue
+
+		flag=1
+
+		#MATCHING NAME:
+		name1=element[0].lower()
+		name2=to_find[0].lower()
+		check_name2=name2.replace(' ','')
+		if(check_name2.isalpha()!=True):
+			print("Only alphabets allowed in name")
+			return []
+		else:
+			if((name2!="_") and (name2 not in name1)):
+				flag=0
+
+		#MATCHING PAPER TYPE:
+		type1=(element[1].lower())[0]
+		type2=to_find[1].lower()
+		print(type2)
+		print(type(type2))
+		if(type2 not in "abcdefghijklmnopqrstuvwxyz"):
+			print("Only alphabet is allowed in publication type")
+			return []
+		else:
+			if((type2!='_') and (type1!=type2)):
+				flag=0
+
+		#MATCHING PAPER:
+		paper1=element[2].lower()
+		paper1=strip_symbols(paper1)
+		paper2=to_find[2].lower()
+		paper2=strip_symbols(paper2)
+		if((paper2!="_") and (paper2 not in paper1)):
+				flag=0
+
+		#MATCHING VENUE:
+		venue1=element[3].lower()
+		venue1=strip_symbols(venue1)
+		venue2=to_find[3].lower()
+		venue2=strip_symbols(venue2)
+		if((venue1!="") and (venue2!="_") and (venue2 not in venue1)):
+				flag=0
+
+		year1=element[4]
+		year2=to_find[4]
+		if((year1!=0) and (year2!=-1) and (year2!=year1)):
+			flag=0
+
+		if(flag==1):
+			match_list.append(element)
+			#print("MATCHED")
+		"""if(name2 in name1):
+
+			print("Element = ")
+			print(element)
+			print("\nTo match")
+			print([name1,type1,paper1,venue1,year1])
+			print("\nTo find")
+			print(to_find)
+			print("\nFiltered To find")
+			print([name2,type2,paper2,venue2,year2])
+			print(flag)
+			sys.stdin.read(1)
+		"""
+
+	return match_list
+
+
+
+
 
 
 lexer=lex.lex()
 for url in URL_FILE:
 	fstring=""
 	# Test it out
-	print("PARSING FOR "+string(url))
+	print("PARSING FOR "+str(url))
 	f=open(url,'r')
 	fr=f.readlines()
 	for line in fr:
@@ -140,6 +221,44 @@ for url in URL_FILE:
 			fstring=fstring+line
 	parser.parse(fstring,debug=0)
 print("PARSING DONE")
+
+while(True):
+
+	to_find=["","",'',"",0]
+	print("Enter text for name or _ to skip")
+	string=input()
+	to_find[0]=string
+	print("Enter text for paper or _ to skip")
+	string=input()
+	to_find[2]=string
+	print("Enter char for type of publication or _ to skip")
+	string=input()
+	c=string[0]
+	to_find[1]=c
+	print("Enter text for venue or _ to skip")
+	string=input()
+	to_find[3]=string
+	print("Enter year or -1 to skip")
+	string=input()
+	year=int(string)
+	to_find[4]=year
+	match_list=paper_filter(work_list,to_find)
+	print("Matching Entries = ")
+	print(match_list)
+
+	flag=0
+	while(True):
+		print("ENTER \\exit or \\continue")
+		string=input()
+		if(string=="\\exit"):
+			break
+		elif(string=="\\continue"):
+			flag=1
+			break
+	if(flag==0):
+		break
+
+
 
 
 
