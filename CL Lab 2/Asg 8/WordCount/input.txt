@@ -1,0 +1,3 @@
+hello I am a cat
+cat is afraid of dog
+dog is cute
